@@ -6,20 +6,32 @@ import Link from 'next/link';
 import { useState } from 'react';
 import LearnOptions from '@/components/learn/LearnOptions';
 import PromptDisplay from '@/components/learn/PromptDisplay';
+import ContentSummaries from '@/components/learn/ContentSummaries';
 
 export default function LearnPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
   
   const openPromptModal = () => setIsPromptModalOpen(true);
   const closePromptModal = () => setIsPromptModalOpen(false);
   
+  // In a real app, this would come from a backend API call
+  // This simulates the initial state when a document is first uploaded
+  // and then updates after an analysis option is selected
+  const handleOptionSelect = () => {
+    // Simulate content generation
+    setTimeout(() => {
+      setHasGeneratedContent(true);
+    }, 1500);
+  }
+  
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
       <motion.div 
-        className="w-full max-w-3xl mx-auto p-6 pt-10"
+        className="w-full max-w-3xl mx-auto p-6 pt-10 pb-20"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -55,7 +67,14 @@ export default function LearnPage() {
           </button>
         </div>
         
+        {/* Learning Options */}
         <LearnOptions documentId={id} />
+        
+        {/* Divider */}
+        <div className="border-t border-gray-100 dark:border-gray-800 my-10"></div>
+        
+        {/* Content Summaries */}
+        <ContentSummaries documentId={id} />
       </motion.div>
       
       {/* Prompt Display Modal */}

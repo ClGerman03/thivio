@@ -36,11 +36,27 @@ export default function LearnOptions({ documentId }: LearnOptionsProps) {
     setSelectedOption(option);
     setIsLoading(true);
 
-    // En una aplicación real, aquí se procesaría el documento según la opción seleccionada
+    // Generate a unique ID for the new debate or summary
+    // In a real app, this would come from an API response after creating the resource
+    const generateUniqueId = () => {
+      return `${option}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    };
+    
+    const newId = generateUniqueId();
+    
+    // In a real application, we would make an API call to create the resource
+    // and associate it with the source document
     setTimeout(() => {
       setIsLoading(false);
-      // router.push(`/learn/${documentId}/${option}`);
-      console.log(`Selected option: ${option} for document: ${documentId}`);
+      
+      // Route to the appropriate page based on the option selected
+      if (option === 'debate') {
+        router.push(`/debates/${newId}`);
+      } else if (option === 'summary') {
+        router.push(`/summaries/${newId}`);
+      }
+      
+      console.log(`Created new ${option} with ID: ${newId} for document: ${documentId}`);
     }, 1500);
   };
 
