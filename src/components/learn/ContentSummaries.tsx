@@ -7,7 +7,7 @@ type Summary = {
   id: string;
   title: string;
   excerpt: string;
-  type: 'summary' | 'debate';
+  type: 'debate' | 'structure' | 'weakpoints';
   createdAt: string;
 };
 
@@ -20,9 +20,9 @@ export default function ContentSummaries({ documentId }: ContentSummariesProps) 
   const [summaries, setSummaries] = useState<Summary[]>([
     {
       id: 's1',
-      title: 'Main Points Summary',
+      title: 'Argument Structure Analysis',
       excerpt: 'This document discusses the impact of climate change on global ecosystems, with particular focus on coral reefs and rainforests...',
-      type: 'summary',
+      type: 'structure',
       createdAt: 'April 28, 2025'
     },
     {
@@ -34,9 +34,9 @@ export default function ContentSummaries({ documentId }: ContentSummariesProps) 
     },
     {
       id: 's2',
-      title: 'Key Concepts Analysis',
-      excerpt: 'Carbon neutrality, sustainable development, and climate resilience are key concepts throughout this text...',
-      type: 'summary',
+      title: 'Potential Weakpoints Identified',
+      excerpt: 'Carbon neutrality, sustainable development, and climate resilience are key concepts with potential weaknesses in this text...',
+      type: 'weakpoints',
       createdAt: 'April 30, 2025'
     }
   ]);
@@ -70,25 +70,14 @@ export default function ContentSummaries({ documentId }: ContentSummariesProps) 
             <div className="flex items-center p-2.5">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center mb-1">
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs ${
-                    summary.type === 'summary' 
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' 
-                      : 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-                  }`}>
-                    {summary.type === 'summary' ? (
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
-                        <path d="M16 13H8"></path>
-                        <path d="M16 17H8"></path>
-                        <path d="M10 9H8"></path>
-                      </svg>
-                    ) : (
+                  {summary.type === 'debate' && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
                       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
                       </svg>
-                    )}
-                    {summary.type === 'summary' ? 'Summary' : 'Debate'}
-                  </span>
+                      Debate
+                    </span>
+                  )}
                   <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
                     {summary.createdAt}
                   </span>

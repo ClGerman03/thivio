@@ -11,17 +11,17 @@ export default function Upload() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const handlePromptSubmit = (prompt: string) => {
-    console.log('Prompt submitted:', prompt);
+    console.log('Context submitted:', prompt);
     
-    // Save prompt to localStorage
+    // Save context to localStorage
     try {
-      localStorage.setItem('lexiroo_prompt', prompt);
+      localStorage.setItem('learning_context', prompt);
     } catch (error) {
-      console.error('Error saving prompt to localStorage:', error);
+      console.error('Error saving context to localStorage:', error);
     }
     
     // If we already have a file, process everything and redirect
-    const savedFileName = localStorage.getItem('lexiroo_filename');
+    const savedFileName = localStorage.getItem('learning_filename');
     if (savedFileName) {
       processAndRedirect();
     }
@@ -32,20 +32,20 @@ export default function Upload() {
     
     // Save filename to localStorage
     try {
-      localStorage.setItem('lexiroo_filename', file.name);
+      localStorage.setItem('learning_filename', file.name);
     } catch (error) {
       console.error('Error saving filename to localStorage:', error);
     }
     
-    // If we already have a prompt, process everything and redirect
-    const savedPrompt = localStorage.getItem('lexiroo_prompt');
+    // If we already have a context, process everything and redirect
+    const savedPrompt = localStorage.getItem('learning_context');
     if (savedPrompt) {
       processAndRedirect();
     }
   };
   
   const processAndRedirect = () => {
-    // In a real app, this would make an API call to process the file with the prompt
+    // In a real app, this would make an API call to process the file with the context
     // and return a document ID
     setIsProcessing(true);
     
@@ -66,10 +66,10 @@ export default function Upload() {
       >
         <div className="text-center mb-8">
           <h1 className="text-2xl font-light text-gray-800 dark:text-white leading-tight mb-2">
-            Learn with Lexiroo
+            Enhanced Learning
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Upload a document and enhance your understanding with AI
+            Add context about what you want to learn
           </p>
         </div>
         

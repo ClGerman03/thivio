@@ -49,8 +49,8 @@ export default function LearnPage() {
         </div>
         
         <div className="my-6">
-          <h1 className="text-2xl font-light text-gray-800 dark:text-white leading-tight mb-2">
-            AI Learning Assistant
+          <h1 className="text-xl font-light text-gray-800 dark:text-white leading-tight mb-2">
+            Document Analysis Tools
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-4">
             Choose how you'd like to enhance your understanding of this document

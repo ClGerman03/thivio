@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, KeyboardEvent, useCallback, useRef } from 'react';
+import { useState, KeyboardEvent, useCallback, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface PromptInputProps {
@@ -14,6 +14,7 @@ export default function PromptInput({ onSubmit, onFileUpload }: PromptInputProps
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = () => {
     if (!prompt.trim()) return;
@@ -37,6 +38,29 @@ export default function PromptInput({ onSubmit, onFileUpload }: PromptInputProps
       handleSubmit();
     }
   };
+  
+  // Ajustar automáticamente la altura del textarea con límite máximo
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    // Restablecer la altura para calcular correctamente
+    textarea.style.height = 'auto';
+    
+    // Establecer la altura basada en el contenido, con límite máximo
+    const minHeight = 80; // altura mínima en píxeles
+    const maxHeight = 160; // altura máxima en píxeles
+    
+    const newHeight = Math.min(
+      Math.max(textarea.scrollHeight, minHeight),
+      maxHeight
+    );
+    
+    textarea.style.height = `${newHeight}px`;
+    
+    // Activar/desactivar overflow basado en si hemos alcanzado el límite
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }, [prompt]);
   
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -70,11 +94,18 @@ export default function PromptInput({ onSubmit, onFileUpload }: PromptInputProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
+      <div className="mb-2">
+        <h3 className="text-sm font-light text-gray-500 dark:text-gray-400 opacity-75 ml-1">
+          Learning Context
+        </h3>
+      </div>
+
       <div className="relative rounded-xl bg-gray-50 dark:bg-gray-800/30 p-1.5">
         <textarea
-          className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none resize-none rounded-xl"
-          placeholder="What do you want to learn from this document?"
-          rows={2}
+          ref={textareaRef}
+          className="w-full px-3 py-3 text-sm bg-transparent text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none resize-none rounded-xl min-h-[80px]"
+          placeholder="What do you want to learn?"
+          rows={3}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -109,13 +140,20 @@ export default function PromptInput({ onSubmit, onFileUpload }: PromptInputProps
             />
           </button>
           
+          {/* Character count */}
+          {prompt.length > 0 && (
+            <div className="text-xs text-gray-400 dark:text-gray-500">
+              {prompt.length}
+            </div>
+          )}
+          
           {/* Send button */}
           <button
             className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-800 dark:hover:text-white rounded-full transition-colors disabled:opacity-40 disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500"
             onClick={handleSubmit}
             disabled={!prompt.trim() || isSubmitting}
-            aria-label="Send prompt"
-            title="Send prompt"
+            aria-label="Add context"
+            title="Add learning context"
           >
             {isSubmitting ? (
               <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent dark:border-gray-500 dark:border-t-transparent rounded-full animate-spin"></div>
@@ -151,7 +189,7 @@ export default function PromptInput({ onSubmit, onFileUpload }: PromptInputProps
       
       <div className="mt-2 text-center">
         <p className="text-xs text-gray-400 dark:text-gray-600">
-          Supports PDF, Word, TXT and MD formats
+          Provide details to focus your learning experience
         </p>
       </div>
     </motion.div>
