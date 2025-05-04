@@ -39,15 +39,12 @@ type LearnOptionsProps = {
 export default function LearnOptions({ documentId }: LearnOptionsProps) {
   const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleOptionSelect = (optionId: string) => {
     setSelectedOption(optionId);
     
     // Solo el modo de debate/sparring está activo
     if (optionId === 'debate') {
-      setIsLoading(true);
-
       // Generate a unique ID for the new debate session
       // In a real app, this would come from an API response after creating the resource
       const generateUniqueId = () => {
@@ -56,15 +53,9 @@ export default function LearnOptions({ documentId }: LearnOptionsProps) {
       
       const newId = generateUniqueId();
       
-      // In a real application, we would make an API call to create the resource
-      // and associate it with the source document
-      setTimeout(() => {
-        setIsLoading(false);
-        
-        // Solo navegar para el modo debate/sparring
-        router.push(`/debates/${newId}?mode=${optionId}`);
-        console.log(`Created new debate session with mode: ${optionId}, ID: ${newId} for document: ${documentId}`);
-      }, 1500);
+      // Redirect immediately without showing loading state
+      router.push(`/debates/${newId}?mode=${optionId}`);
+      console.log(`Created new debate session with mode: ${optionId}, ID: ${newId} for document: ${documentId}`);
     } else {
       // Para los otros dos botones, simplemente mostrar un mensaje en consola
       console.log(`Modo ${optionId} seleccionado pero no está disponible todavía`);
@@ -92,16 +83,7 @@ export default function LearnOptions({ documentId }: LearnOptionsProps) {
     },
   ];
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="w-5 h-5 border border-gray-300 border-t-gray-500 rounded-full animate-spin mb-4"></div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 font-light">
-          Analyzing document...
-        </p>
-      </div>
-    );
-  }
+  // Loading state removed
 
   return (
     <motion.div

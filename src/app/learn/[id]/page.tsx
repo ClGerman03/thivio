@@ -3,30 +3,76 @@
 import { motion } from 'framer-motion';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LearnOptions from '@/components/learn/LearnOptions';
-import PromptDisplay from '@/components/learn/PromptDisplay';
 import ContentSummaries from '@/components/learn/ContentSummaries';
+import EditableText from '@/components/shared/EditableText';
+import ContentOptions from '@/components/learn/inputcontent/ContentOptions';
 
 export default function LearnPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
-  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [learningContext, setLearningContext] = useState<string>('');
   
-  const openPromptModal = () => setIsPromptModalOpen(true);
-  const closePromptModal = () => setIsPromptModalOpen(false);
+  // Estado para almacenar el título y subtítulo editables
+  const [title, setTitle] = useState('Document Analysis Tools');
+  const [subtitle, setSubtitle] = useState('Choose how you\'d like to enhance your understanding of this document');
   
-  // In a real app, this would come from a backend API call
-  // This simulates the initial state when a document is first uploaded
-  // and then updates after an analysis option is selected
-  const handleOptionSelect = () => {
-    // Simulate content generation
+  // Efecto para cargar los datos guardados de localStorage (simulando persistencia)
+  useEffect(() => {
+    // Al usar el ID del documento, cada documento tendrá su propio título/subtítulo, archivos y contexto
+    const savedTitle = localStorage.getItem(`doc_title_${id}`);
+    const savedSubtitle = localStorage.getItem(`doc_subtitle_${id}`);
+    const savedFileName = localStorage.getItem(`doc_file_${id}`);
+    const savedText = localStorage.getItem(`doc_text_${id}`);
+    
+    if (savedTitle) setTitle(savedTitle);
+    if (savedSubtitle) setSubtitle(savedSubtitle);
+    if (savedText) setLearningContext(savedText);
+    
+    // Si hay un archivo o texto guardado, simular que tenemos contenido generado
+    if (savedFileName || savedText) {
+      setHasGeneratedContent(true);
+    }
+  }, [id]);
+  
+  // Manejadores para guardar los cambios
+  const handleTitleSave = (newTitle: string) => {
+    setTitle(newTitle);
+    localStorage.setItem(`doc_title_${id}`, newTitle);
+  };
+  
+  const handleSubtitleSave = (newSubtitle: string) => {
+    setSubtitle(newSubtitle);
+    localStorage.setItem(`doc_subtitle_${id}`, newSubtitle);
+  };
+  
+  // Manejar la carga de archivos
+  const handleFileUploaded = (files: File[]) => {
+    if (files.length === 0) return;
+    
+    console.log(`${files.length} archivos cargados`);
+    setUploadedFiles(prev => [...prev, ...files]);
+    
+    // Simulate content generation after file upload
     setTimeout(() => {
       setHasGeneratedContent(true);
-    }, 1500);
-  }
+    }, 1000);
+  };
+  
+  // Manejar la adición de texto
+  const handleTextAdded = (text: string) => {
+    console.log('Texto agregado:', text.substring(0, 50) + '...');
+    setLearningContext(text);
+    
+    // Simulate content generation after text added
+    setTimeout(() => {
+      setHasGeneratedContent(true);
+    }, 1000);
+  };
   
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
@@ -49,40 +95,49 @@ export default function LearnPage() {
         </div>
         
         <div className="my-6">
-          <h1 className="text-xl font-light text-gray-800 dark:text-white leading-tight mb-2">
-            Document Analysis Tools
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-4">
-            Choose how you'd like to enhance your understanding of this document
-          </p>
+          <EditableText
+            as="h1"
+            initialText={title}
+            onSave={handleTitleSave}
+            className="text-gray-800 dark:text-white mb-2" 
+            placeholder="Enter document title"
+          />
+          <EditableText
+            as="p"
+            initialText={subtitle}
+            onSave={handleSubtitleSave}
+            className="text-gray-500 dark:text-gray-400 max-w-md mb-4"
+            placeholder="Enter document description"
+          />
           
-          <button
-            onClick={openPromptModal}
-            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 transition-colors inline-flex items-center gap-1 bg-gray-50 dark:bg-gray-800/30 px-3 py-1.5 rounded-lg"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
-            </svg>
-            <span>View request details</span>
-          </button>
+          {/* Opciones de contenido */}
+          <ContentOptions 
+            documentId={id}
+            onFileUploaded={handleFileUploaded}
+            onTextAdded={handleTextAdded}
+          />
         </div>
         
-        {/* Learning Options */}
-        <LearnOptions documentId={id} />
-        
-        {/* Divider */}
-        <div className="border-t border-gray-100 dark:border-gray-800 my-10"></div>
-        
-        {/* Content Summaries */}
-        <ContentSummaries documentId={id} />
+        {hasGeneratedContent ? (
+          <>
+            {/* Learning Options */}
+            <LearnOptions documentId={id} />
+            
+            {/* Divider */}
+            <div className="border-t border-gray-100 dark:border-gray-800 my-10"></div>
+            
+            {/* Content Summaries */}
+            <ContentSummaries documentId={id} />
+          </>
+        ) : (
+          <div className="mt-10 text-center py-10">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Add content to start analyzing your document
+            </p>
+          </div>
+        )}
       </motion.div>
-      
-      {/* Prompt Display Modal */}
-      <PromptDisplay 
-        documentId={id} 
-        isOpen={isPromptModalOpen} 
-        onClose={closePromptModal} 
-      />
+
     </div>
   );
 }

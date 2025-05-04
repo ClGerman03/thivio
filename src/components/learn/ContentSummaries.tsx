@@ -17,36 +17,35 @@ interface ContentSummariesProps {
 
 export default function ContentSummaries({ documentId }: ContentSummariesProps) {
   // In a real app, we would fetch this data from an API using the documentId
-  const [summaries, setSummaries] = useState<Summary[]>([
-    {
-      id: 's1',
-      title: 'Argument Structure Analysis',
-      excerpt: 'This document discusses the impact of climate change on global ecosystems, with particular focus on coral reefs and rainforests...',
-      type: 'structure',
-      createdAt: 'April 28, 2025'
-    },
-    {
-      id: 'd1',
-      title: 'Economic vs Environmental Priorities',
-      excerpt: 'The debate centers around balancing short-term economic gains against long-term environmental sustainability...',
-      type: 'debate',
-      createdAt: 'April 29, 2025'
-    },
-    {
-      id: 's2',
-      title: 'Potential Weakpoints Identified',
-      excerpt: 'Carbon neutrality, sustainable development, and climate resilience are key concepts with potential weaknesses in this text...',
-      type: 'weakpoints',
-      createdAt: 'April 30, 2025'
-    }
-  ]);
+  const [summaries, setSummaries] = useState<Summary[]>([]);
 
   if (summaries.length === 0) {
     return (
-      <div className="mt-8 p-4 border border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-gray-800/30 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          No summaries or debates available yet. Create your first one above.
-        </p>
+      <div className="mt-8">
+        <h2 className="text-xl font-light text-gray-800 dark:text-white mb-4">
+          Analysis & Insights
+        </h2>
+        
+        <div className="flex flex-col items-center justify-center py-12 px-4 bg-gray-50/30 dark:bg-gray-800/20 rounded-lg border border-gray-100/50 dark:border-gray-800/50">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 dark:text-gray-700 mb-4">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+            <line x1="9" y1="2" x2="9" y2="4"></line>
+            <line x1="15" y1="2" x2="15" y2="4"></line>
+            <line x1="9" y1="20" x2="9" y2="22"></line>
+            <line x1="15" y1="20" x2="15" y2="22"></line>
+            <line x1="20" y1="9" x2="22" y2="9"></line>
+            <line x1="20" y1="14" x2="22" y2="14"></line>
+            <line x1="2" y1="9" x2="4" y2="9"></line>
+            <line x1="2" y1="14" x2="4" y2="14"></line>
+          </svg>
+          <p className="text-sm text-gray-400 dark:text-gray-500 font-light">
+            No analysis available yet
+          </p>
+          <p className="text-xs text-gray-300 dark:text-gray-600 mt-1 max-w-md text-center">
+            Add content and start the analysis to see insights and summaries here
+          </p>
+        </div>
       </div>
     );
   }

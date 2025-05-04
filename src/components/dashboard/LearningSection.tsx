@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 
 // Usando iconos similares a los de Lucide con SVG básico para no añadir dependencias
@@ -32,18 +32,30 @@ export default function LearningSection() {
   // In a real app, we would use a hook to fetch data
   const learnings = mockLearnings;
   const isLoading = false;
+  const router = useRouter();
+  
+  // Función para crear un nuevo aprendizaje y redirigir a la página de learn
+  const createNewLearning = () => {
+    // En desarrollo generamos un ID determinístico basado en el timestamp
+    // En producción, esto sería manejado por el backend (por ejemplo, Supabase)
+    const timestamp = Date.now();
+    const documentId = `dev-${timestamp}`;
+    
+    // Redirigir al usuario a la página de learn con el nuevo ID
+    router.push(`/learn/${documentId}`);
+  };
   
   return (
     <div className="mt-8">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-light text-gray-700 dark:text-gray-300">My Learnings</h2>
-        <Link 
-          href="/upload" 
+        <button 
+          onClick={createNewLearning}
           className="px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
         >
           <PlusIcon />
           <span className="font-light">New Learning</span>
-        </Link>
+        </button>
       </div>
       
       {isLoading ? (
@@ -86,13 +98,13 @@ export default function LearningSection() {
           <p className="text-gray-400 dark:text-gray-500 text-sm mb-5 max-w-sm mx-auto">
             Upload your first document to enhance your understanding with AI assistance
           </p>
-          <Link 
-            href="/upload" 
+          <button 
+            onClick={createNewLearning}
             className="px-5 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm inline-flex items-center gap-2 hover:bg-white dark:hover:bg-gray-800 transition-colors"
           >
             <PlusIcon />
-            <span className="font-light">Upload Document</span>
-          </Link>
+            <span className="font-light">New Learning</span>
+          </button>
         </motion.div>
       )}
     </div>
