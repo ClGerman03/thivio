@@ -19,6 +19,11 @@ export default function DebateTypeSelection({
 }: DebateTypeSelectionProps) {
   const debateTypes: DebateType[] = [
     {
+      id: 'balanced',
+      title: 'Balanced',
+      description: 'Presentation of valid arguments from multiple perspectives on the topic',
+    },
+    {
       id: 'socratic',
       title: 'Socratic',
       description: 'Question-based analysis to explore the premises and conclusions of the topic',
@@ -27,11 +32,6 @@ export default function DebateTypeSelection({
       id: 'critical',
       title: 'Critical',
       description: 'Focus on finding inconsistencies and weaknesses in the main arguments',
-    },
-    {
-      id: 'balanced',
-      title: 'Balanced',
-      description: 'Presentation of valid arguments from multiple perspectives on the topic',
     },
   ];
 

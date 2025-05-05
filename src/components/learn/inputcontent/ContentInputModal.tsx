@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TextInputSection from './TextInputSection';
 import FileUploadSection from './FileUploadSection';
+import TextExamples from './TextExamples';
 
 interface ContentInputModalProps {
   isOpen: boolean;
@@ -128,6 +129,9 @@ export default function ContentInputModal({
                     text={text}
                     onChange={setText}
                   />
+                  
+                  {/* Text examples section */}
+                  <TextExamples onSelectExample={setText} />
                   
                   {/* Files section */}
                   <FileUploadSection
