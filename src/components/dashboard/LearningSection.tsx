@@ -93,7 +93,7 @@ export default function LearningSection() {
             <ClipboardIcon />
           </div>
           <p className="text-gray-500 dark:text-gray-400 mb-2 font-light">
-            You don't have any saved learnings
+            You don&apos;t have any saved learnings
           </p>
           <p className="text-gray-400 dark:text-gray-500 text-sm mb-5 max-w-sm mx-auto">
             Upload your first document to enhance your understanding with AI assistance

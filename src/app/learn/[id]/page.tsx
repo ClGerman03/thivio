@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import LearnOptions from '@/components/learn/LearnOptions';
@@ -10,16 +10,16 @@ import EditableText from '@/components/shared/EditableText';
 import ContentOptions from '@/components/learn/inputcontent/ContentOptions';
 
 export default function LearnPage() {
-  const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [learningContext, setLearningContext] = useState<string>('');
+  // Retenemos la función setter pero comentamos la variable no utilizada
+  const [, setUploadedFiles] = useState<File[]>([]);
+  const [, setLearningContext] = useState<string>('');
   
   // Estado para almacenar el título y subtítulo editables
   const [title, setTitle] = useState('Document Analysis Tools');
-  const [subtitle, setSubtitle] = useState('Choose how you\'d like to enhance your understanding of this document');
+  const [subtitle, setSubtitle] = useState('Choose how you&apos;d like to enhance your understanding of this document');
   
   // Efecto para cargar los datos guardados de localStorage (simulando persistencia)
   useEffect(() => {

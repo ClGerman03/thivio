@@ -58,11 +58,6 @@ export default function InitialPositionSelection({
     
     onPositionsChange(updatedPositions);
     
-    // Verificar si todos los temas tienen posturas después de esta actualización
-    const allCompleted = topics.every(topic => 
-      (topic === currentTopic) ? true : (updatedPositions[topic] && updatedPositions[topic].trim().length > 0)
-    );
-    
     // Pasar al siguiente tema si hay más
     if (currentTopicIndex < topics.length - 1) {
       setCurrentTopicIndex(currentTopicIndex + 1);

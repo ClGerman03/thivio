@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { saveDebateConfig, loadDebateConfig, generateDebateSessionData } from '@/services/debateService';
 import TopicSelection from '@/components/debate/steps/TopicSelection';
 import InitialPositionSelection from '@/components/debate/steps/InitialPositionSelection';
-import DebateTypeSelection from '@/components/debate/steps/DebateTypeSelection';
 import OpponentSelection from '@/components/debate/steps/OpponentSelection';
-import UserRoleSelection from '@/components/debate/steps/UserRoleSelection';
+import DebateFormatSelection from '@/components/debate/steps/DebateFormatSelection';
 import DebateSession from '@/components/debate/session/DebateSession';
 import { DebateSummary } from '@/components/debate/summary';
 
@@ -16,11 +16,13 @@ type DebateWorkflowProps = {
 };
 
 export type DebateConfig = {
+  topic: string;
   topics: string[];
-  positions: Record<string, string>;
-  debateType: string;
+  debateFormat: string;
+  turnCount: number;
   opponent: string;
-  userRole: string;
+  positions: Record<string, string>;
+  timestamp?: number; // Opcional: timestamp para seguimiento
 };
 
 export type StepInfo = {
@@ -30,7 +32,7 @@ export type StepInfo = {
   description: string;
 };
 
-const steps = ['topic', 'initialPosition', 'debateType', 'opponent', 'userRole'];
+const steps = ['topic', 'initialPosition', 'opponent', 'debateFormat'];
 
 const stepInfo: Record<string, {title: string, description: string}> = {
   topic: {
@@ -41,28 +43,26 @@ const stepInfo: Record<string, {title: string, description: string}> = {
     title: 'Initial positions',
     description: 'Define your starting perspective on each topic'
   },
-  debateType: {
-    title: 'Choose an approach',
-    description: 'Define how the discussion will be structured'
-  },
   opponent: {
     title: 'Select opponent',
     description: 'Choose a philosopher to debate with'
   },
-  userRole: {
-    title: 'Define your role',
-    description: 'Establish how you will participate in the debate'
+  debateFormat: {
+    title: 'Select debate format',
+    description: 'Choose how the debate will be structured'
   }
 };
 
-export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkflowProps) {
+export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [debateConfig, setDebateConfig] = useState<DebateConfig>({
-    topics: [],
-    positions: {},
-    debateType: '',
-    opponent: '',
-    userRole: '',
+  // Cargar la configuración del debate desde localStorage o usar valores por defecto
+  const [debateConfig, setDebateConfig] = useState<DebateConfig>(loadDebateConfig() || {
+    topic: '',
+    topics: [], // Array de tópicos
+    debateFormat: 'turn-based', // Default format
+    turnCount: 3, // Default number of turns
+    opponent: '', // AI opponent
+    positions: {}, // User's positions on each topic
   });
   const [debateStarted, setDebateStarted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -97,13 +97,18 @@ export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkf
   };
 
   const updateDebateConfig = <T extends keyof DebateConfig>(key: T, value: DebateConfig[T]) => {
-    setDebateConfig(prev => ({ ...prev, [key]: value }));
+    const updatedConfig = { ...debateConfig, [key]: value };
+    setDebateConfig(updatedConfig);
+    // Persistir la configuración actualizada
+    saveDebateConfig(updatedConfig);
   };
 
   const handleSubmit = () => {
-    // Start the debate with the current configuration
+    // Guardar la configuración final del debate
+    saveDebateConfig(debateConfig);
     console.log('Starting debate with configuration:', debateConfig);
-    // In a real app, you would make an API call to save the configuration
+    
+    // Iniciar el debate
     setDebateStarted(true);
     
     // Actualizar el título y descripción para la sesión activa
@@ -112,7 +117,7 @@ export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkf
         index: -1, // Índice especial para la sesión activa
         type: 'session',
         title: debateConfig.topics[0], // Tomamos el primer tema como título principal
-        description: `${debateConfig.debateType} debate • ${debateConfig.userRole} role • ${debateConfig.topics.length} topics`
+        description: `${debateConfig.debateFormat} format • ${debateConfig.topics.length} topics`
       });
     }
   };
@@ -131,13 +136,35 @@ export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkf
     
     // Opcionalmente, resetear la configuración si quieres que el usuario empiece de cero
     setDebateConfig({
+      topic: '',
       topics: [],
-      positions: {},
-      debateType: '',
+      debateFormat: 'turn-based',
+      turnCount: 3,
       opponent: '',
-      userRole: '',
+      positions: {},
     });
     setCurrentStepIndex(0);
+  };
+
+  const validateStep = () => {
+    switch (currentStep) {
+      case 'topic':
+        // Validar que el usuario ha ingresado al menos un tópico
+        return debateConfig.topics.length > 0 || !!debateConfig.topic.trim();
+      case 'initialPosition':
+        // Validar que el usuario ha ingresado posiciones para todos los tópicos
+        return debateConfig.topics.every(topic => 
+          debateConfig.positions[topic] && debateConfig.positions[topic].trim().length > 0
+        );
+      case 'opponent':
+        // Validar que el usuario ha seleccionado un oponente
+        return !!debateConfig.opponent;
+      case 'debateFormat':
+        // Validar que se ha seleccionado un formato de debate
+        return !!debateConfig.debateFormat && debateConfig.turnCount > 0;
+      default:
+        return true;
+    }
   };
 
   return (
@@ -170,12 +197,7 @@ export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkf
                 />
               )}
               
-              {currentStep === 'debateType' && (
-                <DebateTypeSelection 
-                  selectedType={debateConfig.debateType}
-                  onSelectType={(type: string) => updateDebateConfig('debateType', type)}
-                />
-              )}
+
               
               {currentStep === 'opponent' && (
                 <OpponentSelection 
@@ -184,10 +206,12 @@ export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkf
                 />
               )}
               
-              {currentStep === 'userRole' && (
-                <UserRoleSelection 
-                  selectedRole={debateConfig.userRole}
-                  onSelectRole={(role: string) => updateDebateConfig('userRole', role)}
+              {currentStep === 'debateFormat' && (
+                <DebateFormatSelection
+                  selectedFormat={debateConfig.debateFormat}
+                  turnCount={debateConfig.turnCount}
+                  onSelectFormat={(format) => updateDebateConfig('debateFormat', format)}
+                  onSelectTurnCount={(count) => updateDebateConfig('turnCount', count)}
                 />
               )}
             </motion.div>
@@ -209,46 +233,28 @@ export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkf
             {currentStepIndex < steps.length - 1 ? (
               <motion.button
                 onClick={goToNextStep}
-                disabled={currentStep === 'topic' 
-                  ? !debateConfig.topics || debateConfig.topics.length === 0 
-                  : currentStep === 'initialPosition' 
-                    ? !debateConfig.topics.every(topic => debateConfig.positions[topic] && debateConfig.positions[topic].trim().length > 0)
-                    : !debateConfig[steps[currentStepIndex] as keyof DebateConfig]}
+                disabled={!validateStep()}
                 className={`text-xs px-4 py-1.5 rounded-full border transition-all focus:outline-none ${
-                  currentStep === 'topic' 
-                    ? (!debateConfig.topics || debateConfig.topics.length === 0)
-                      ? 'opacity-30 cursor-not-allowed text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700'
-                      : 'text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-gray-900 dark:hover:border-gray-300'
-                    : currentStep === 'initialPosition'
-                      ? (!debateConfig.topics.every(topic => debateConfig.positions[topic] && debateConfig.positions[topic].trim().length > 0))
-                        ? 'opacity-30 cursor-not-allowed text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700'
-                        : 'text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-gray-900 dark:hover:border-gray-300'
-                      : !debateConfig[steps[currentStepIndex] as keyof DebateConfig]
-                        ? 'opacity-30 cursor-not-allowed text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700'
-                        : 'text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-gray-900 dark:hover:border-gray-300'
+                  !validateStep()
+                    ? 'opacity-30 cursor-not-allowed text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700'
+                    : 'text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-gray-900 dark:hover:border-gray-300'
                 }`}
-                whileHover={
-                  currentStep === 'topic'
-                    ? (debateConfig.topics && debateConfig.topics.length > 0) ? { y: -1 } : {}
-                    : currentStep === 'initialPosition'
-                      ? debateConfig.topics.every(topic => debateConfig.positions[topic] && debateConfig.positions[topic].trim().length > 0) ? { y: -1 } : {}
-                      : debateConfig[steps[currentStepIndex] as keyof DebateConfig] ? { y: -1 } : {}
-                }
-                whileTap={debateConfig[steps[currentStepIndex] as keyof DebateConfig] ? { scale: 0.98 } : {}}
+                whileHover={validateStep() ? { y: -1 } : undefined}
+                whileTap={validateStep() ? { scale: 0.98 } : undefined}
               >
                 continue
               </motion.button>
             ) : (
               <motion.button
                 onClick={handleSubmit}
-                disabled={!debateConfig.userRole}
+                disabled={!debateConfig.debateFormat}
                 className={`text-xs px-4 py-1.5 rounded-full border transition-all focus:outline-none ${
-                  !debateConfig.userRole
+                  !debateConfig.debateFormat
                     ? 'opacity-30 cursor-not-allowed text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700'
                     : 'text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-gray-900 dark:hover:border-gray-300'
                 }`}
-                whileHover={debateConfig.userRole ? { y: -1 } : {}}
-                whileTap={debateConfig.userRole ? { scale: 0.98 } : {}}
+                whileHover={debateConfig.debateFormat ? { y: -1 } : {}}
+                whileTap={debateConfig.debateFormat ? { scale: 0.98 } : {}}
               >
                 start debate
               </motion.button>
@@ -271,10 +277,7 @@ export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkf
                 exit={{ opacity: 0 }}
               >
                 <DebateSession 
-                  debateConfig={{
-                    ...debateConfig,
-                    topic: debateConfig.topics && debateConfig.topics.length > 0 ? debateConfig.topics[0] : ''
-                  } as any}
+                  debateConfig={generateDebateSessionData(debateConfig)}
                   onDebateEnd={handleDebateEnd}
                 />
               </motion.div>
@@ -287,9 +290,10 @@ export default function DebateWorkflow({ documentId, onStepChange }: DebateWorkf
               >
                 <DebateSummary 
                   debateConfig={{
-                    ...debateConfig,
-                    topic: debateConfig.topics && debateConfig.topics.length > 0 ? debateConfig.topics[0] : ''
-                  } as any}
+                    topic: debateConfig.topics && debateConfig.topics.length > 0 ? debateConfig.topics[0] : '',
+                    debateType: 'turn-based', // El formato de debate estándar
+                    userRole: Object.keys(debateConfig.positions)[0] || '' // Usamos la primera posición como rol del usuario
+                  }}
                   onFinish={handleSummaryFinish}
                 />
               </motion.div>

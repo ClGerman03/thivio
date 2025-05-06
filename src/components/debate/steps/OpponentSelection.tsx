@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type OpponentSelectionProps = {
@@ -21,24 +21,10 @@ export default function OpponentSelection({
   onSelectOpponent,
 }: OpponentSelectionProps) {
   // Estado para controlar la categoría de oponente seleccionada
-  const [category, setCategory] = useState<'philosophers' | 'regular'>('philosophers');
+  const [category, setCategory] = useState<'philosophers' | 'regular'>('regular');
   
-  // Asegurarnos de que el oponente seleccionado pertenece a la categoría activa
-  useEffect(() => {
-    if (selectedOpponent) {
-      const opponentExists = (
-        category === 'philosophers' 
-          ? philosopherOpponents 
-          : regularOpponents
-      ).some(opp => opp.id === selectedOpponent);
-      
-      if (!opponentExists) {
-        onSelectOpponent('');
-      }
-    }
-  }, [category, selectedOpponent, onSelectOpponent]);
-  
-  const philosopherOpponents: Opponent[] = [
+  // Usamos useMemo para evitar recrear los arrays en cada renderizado
+  const philosopherOpponents = useMemo<Opponent[]>(() => [
     {
       id: 'socrates',
       name: 'Socrates',
@@ -72,9 +58,9 @@ export default function OpponentSelection({
       ],
       debateStyle: 'Applies rigorous logical analysis to determine universal principles'
     }
-  ];
+  ], []);
   
-  const regularOpponents: Opponent[] = [
+  const regularOpponents = useMemo<Opponent[]>(() => [
     {
       id: 'emily',
       name: 'Emily Carter',
@@ -108,8 +94,34 @@ export default function OpponentSelection({
       ],
       debateStyle: 'Focuses on actionable insights and testing ideas through practical application'
     }
-  ];
+  ], []);
   
+  // Asegurarnos de que siempre haya un oponente seleccionado al cargar el componente
+  useEffect(() => {
+    // Si no hay oponente seleccionado, seleccionar el primero de la categoría actual
+    if (!selectedOpponent) {
+      const defaultOpponent = category === 'philosophers' 
+        ? philosopherOpponents[0].id 
+        : regularOpponents[0].id;
+      onSelectOpponent(defaultOpponent);
+    } else {
+      // Verificar si el oponente seleccionado pertenece a la categoría activa
+      const opponentExists = (
+        category === 'philosophers' 
+          ? philosopherOpponents 
+          : regularOpponents
+      ).some(opp => opp.id === selectedOpponent);
+      
+      // Si el oponente no existe en la categoría actual, seleccionar el primero
+      if (!opponentExists) {
+        const defaultOpponent = category === 'philosophers' 
+          ? philosopherOpponents[0].id 
+          : regularOpponents[0].id;
+        onSelectOpponent(defaultOpponent);
+      }
+    }
+  }, [category, selectedOpponent, onSelectOpponent, philosopherOpponents, regularOpponents]);
+
   // Seleccionar la lista de oponentes basada en la categoría actual
   const opponents = category === 'philosophers' ? philosopherOpponents : regularOpponents;
   
@@ -121,22 +133,22 @@ export default function OpponentSelection({
       {/* Selector de categoría de oponentes */}
       <div className="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-6">
         <button
-          onClick={() => setCategory('philosophers')}
-          className={`flex-1 text-xs py-2 px-4 transition-colors ${category === 'philosophers'
-            ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium'
-            : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-          }`}
-        >
-          Historical Philosophers
-        </button>
-        <button
           onClick={() => setCategory('regular')}
-          className={`flex-1 text-xs py-2 px-4 transition-colors ${category === 'regular'
+          className={`flex-1 text-[11px] py-2 px-3 transition-colors ${category === 'regular'
             ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium'
             : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
           }`}
         >
           Contemporary Debaters
+        </button>
+        <button
+          onClick={() => setCategory('philosophers')}
+          className={`flex-1 text-[11px] py-2 px-3 transition-colors ${category === 'philosophers'
+            ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium'
+            : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+          }`}
+        >
+          Historical Philosophers
         </button>
       </div>
       

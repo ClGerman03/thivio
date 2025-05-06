@@ -1,19 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
 import { DebateWorkflow, StepInfo } from '@/components/debate';
 
 export default function DebatePage() {
-  const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
-  const [isLoading, setIsLoading] = useState(false);
-  const [debateData, setDebateData] = useState<any>(null);
+  const [isLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<StepInfo | null>(null);
-  const [sourceDocumentId, setSourceDocumentId] = useState<string | null>(null);
+  const [sourceDocumentId] = useState<string | null>(null);
 
   // In a real app, we would fetch the debate data and its associated sourceDocumentId
   // For now, we'll skip the loading state since we don't need to fetch anything in this mock

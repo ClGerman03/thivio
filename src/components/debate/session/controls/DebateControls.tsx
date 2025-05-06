@@ -1,7 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
-
 type DebateControlsProps = {
   onPause: () => void;
   onEnd: () => void;

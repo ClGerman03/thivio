@@ -26,7 +26,7 @@ export function useBackButton(isActive: boolean, onBack: () => void) {
     }
 
     // Manejador para el evento popstate (botón "Volver")
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopState = (/* Eliminamos el parámetro event que no se utiliza */) => {
       // Prevenimos la navegación hacia atrás añadiendo otro estado al historial
       // pero solo si estamos activos
       if (isActive) {

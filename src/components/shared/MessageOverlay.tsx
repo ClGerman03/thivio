@@ -61,7 +61,8 @@ export default function MessageOverlay({
   autoDismissAfterMs,
   className = '',
   title,
-  variant = 'info',
+  // Comentamos variant ya que no la estamos utilizando en este componente
+  // variant = 'info',
   showContinueButton = false,
   continueButtonText = 'Continue'
 }: MessageOverlayProps) {
@@ -84,41 +85,9 @@ export default function MessageOverlay({
     };
   }, [isVisible, autoDismissAfterMs, onDismiss]);
 
-  // Variant-specific styles
-  const variantStyles = {
-    info: 'border-blue-100 dark:border-blue-900/40',
-    warning: 'border-amber-100 dark:border-amber-900/40',
-    tip: 'border-emerald-100 dark:border-emerald-900/40',
-    rule: 'border-violet-100 dark:border-violet-900/40'
-  };
-  
-  const iconVariants = {
-    info: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500 dark:text-blue-400">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="16" x2="12" y2="12"></line>
-        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-      </svg>
-    ),
-    warning: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500 dark:text-amber-400">
-        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path>
-        <line x1="12" y1="9" x2="12" y2="13"></line>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-    ),
-    tip: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500 dark:text-emerald-400">
-        <path d="M12 20v-6M9 4a3 3 0 013-3 3 3 0 013 3c0 2-3 3-3 8h0"></path>
-        <circle cx="12" cy="17" r="0.5"></circle>
-      </svg>
-    ),
-    rule: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500 dark:text-violet-400">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-      </svg>
-    )
-  };
+  // Eliminamos las definiciones de variantStyles e iconVariants que no se utilizan
+  // Estas estructuras estaban destinadas a proporcionar estilos y íconos diferentes
+  // según el tipo de mensaje, pero actualmente no se están utilizando
   
   return (
     <AnimatePresence>

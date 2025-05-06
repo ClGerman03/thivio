@@ -4,26 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ContentInputModal from './ContentInputModal';
 
-// File icon for content option
-const FileIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
-    <polyline points="14 2 14 8 20 8"></polyline>
-    <line x1="16" y1="13" x2="8" y2="13"></line>
-    <line x1="16" y1="17" x2="8" y2="17"></line>
-    <line x1="10" y1="9" x2="8" y2="9"></line>
-  </svg>
-);
-
-// Text icon for content option
-const TextIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="17" y1="10" x2="3" y2="10"></line>
-    <line x1="21" y1="6" x2="3" y2="6"></line>
-    <line x1="21" y1="14" x2="3" y2="14"></line>
-    <line x1="17" y1="18" x2="3" y2="18"></line>
-  </svg>
-);
+// Eliminamos los íconos no utilizados FileIcon y TextIcon
 
 // Content icon for combined option
 const ContentIcon = () => (

@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Lexiroo",
-  description: "Aplicación Lexiroo creada con Next.js",
+  title: "Thivio",
+  description: "Thivio - Aprende a través de la IA",
 };
 
 export default function RootLayout({

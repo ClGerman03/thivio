@@ -12,12 +12,14 @@ type Summary = {
 };
 
 interface ContentSummariesProps {
+  // El documentId se mantiene en la interfaz, pero se comentará en la función
   documentId: string;
 }
 
-export default function ContentSummaries({ documentId }: ContentSummariesProps) {
+export default function ContentSummaries({ /* documentId */ }: ContentSummariesProps) {
   // In a real app, we would fetch this data from an API using the documentId
-  const [summaries, setSummaries] = useState<Summary[]>([]);
+  const [summaries] = useState<Summary[]>([]);
+  // Comentamos setSummaries ya que no se utiliza en este componente de demostración
 
   if (summaries.length === 0) {
     return (

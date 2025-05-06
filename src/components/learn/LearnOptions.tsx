@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
@@ -38,10 +37,9 @@ type LearnOptionsProps = {
 
 export default function LearnOptions({ documentId }: LearnOptionsProps) {
   const router = useRouter();
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  // Eliminamos el estado selectedOption ya que no lo estamos usando en el renderizado
 
   const handleOptionSelect = (optionId: string) => {
-    setSelectedOption(optionId);
     
     // Solo el modo de debate/sparring está activo
     if (optionId === 'debate') {

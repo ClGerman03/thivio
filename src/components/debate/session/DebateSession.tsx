@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AIVisualizer from './ai/AIVisualizer';
 import UserVisualizer from './user/UserVisualizer';
 import TurnManagement from './TurnManagement';
-import DebateInterventions from './interventions/DebateInterventions';
 import DebateTopicsList from './controls/DebateTopicsList';
+import DebateTurnStructure from './controls/DebateTurnStructure';
+import { useDebateTurns } from '@/hooks/useDebateTurns';
 
 // Create debate context for sharing state between components
 type DebateContextType = {
@@ -21,9 +22,14 @@ type DebateContextType = {
   isPaused: boolean;
   setIsPaused: (isPaused: boolean) => void;
   currentTopic: string;
-  setCurrentTopic: (topic: string) => void;
   currentTopicIndex: number;
-  setCurrentTopicIndex: (index: number) => void;
+  currentTurnIndex: number;
+  currentTurnName: string;
+  nextTurn: () => void;
+  selectTopic: (topicIndex: number) => void;
+  // Propiedades para el temporizador de debate
+  remainingTime?: number;
+  setRemainingTime: (time: number) => void;
 };
 
 export const DebateContext = createContext<DebateContextType | null>(null);
@@ -39,8 +45,11 @@ export const useDebateContext = () => {
 type DebateSessionProps = {
   debateConfig: {
     topic: string;
-    debateType: string;
-    userRole: string;
+    topics?: string[];
+    debateFormat: string;
+    turnCount: number;
+    opponent: string;
+    positions: Record<string, string>;
   };
   onDebateEnd: () => void;
 };
@@ -53,21 +62,30 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
   const [hasRecordedContent, setHasRecordedContent] = useState<boolean>(false); // Track if user has recorded content
   const [isPaused, setIsPaused] = useState<boolean>(false);
   
-  // Generate subtopics from the main debate topic
-  const generateSubtopics = (mainTopic: string) => {
-    // This is a simple example. In a real app, this might be more sophisticated or come from an API
-    return [
-      `Introduction to "${mainTopic}"`,
-      `Key arguments for "${mainTopic}"`,
-      `Counterarguments against "${mainTopic}"`,
-      `Evidence analysis for "${mainTopic}"`,
-      `Final conclusions on "${mainTopic}"`
-    ];
-  };
+  // Acceder a los tópicos configurados por el usuario
+  const debateTopics = debateConfig.topics || [debateConfig.topic];
   
-  const debateTopics = generateSubtopics(debateConfig.topic);
-  const [currentTopic, setCurrentTopic] = useState<string>(debateTopics[0]);
-  const [currentTopicIndex, setCurrentTopicIndex] = useState<number>(0);
+  // Estado para el temporizador de debate
+  const [remainingTime, setRemainingTime] = useState<number>(0);
+
+  // Usar el hook de gestión de turnos
+  const { 
+    currentTopicIndex, 
+    currentTurnIndex, 
+    currentTopic,
+    currentTurnName,
+    nextTurn,
+    selectTopic,
+    // Comentamos esta variable para evitar el warning de linting
+    // isDebateCompleted
+  } = useDebateTurns(
+    debateTopics, 
+    debateConfig.turnCount, 
+    () => {
+      console.log('Debate completed! All topics and turns finished.');
+      // Podríamos realizar acciones adicionales al finalizar el debate
+    }
+  );
 
   // Usar useCallback para evitar recrear funciones en cada render
   const handleTurnChange = useCallback((speaker: string) => {
@@ -91,34 +109,26 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
   const handleSendUserIntervention = useCallback(() => {
     setHasRecordedContent(false);
     handleTurnChange('ai');
-  }, [handleTurnChange]);
+    
+    // Avanzar al siguiente turno cuando el usuario envía su intervención
+    nextTurn();
+  }, [handleTurnChange, nextTurn]);
 
   // Función para descartar la intervención del usuario
   const handleDiscardUserIntervention = useCallback(() => {
     setHasRecordedContent(false);
   }, []);
 
-  const handleAIFinishSpeaking = useCallback(() => {
-    setIsAISpeaking(false);
-  }, []);
+  // Eliminamos las funciones no utilizadas handleAIFinishSpeaking y handlePauseDebate
+  // para evitar warnings de linting
 
-  const handlePauseDebate = useCallback(() => {
-    setIsPaused(prevState => {
-      // Si vamos a pausar, detener la grabación
-      if (!prevState) {
-        setIsRecording(false);
-      }
-      return !prevState;
-    });
-  }, []);
-
+  // Función para cambiar de tema actual
   const handleTopicSelect = useCallback((topic: string, index: number) => {
-    setCurrentTopic(topic);
-    setCurrentTopicIndex(index);
-  }, []);
+    selectTopic(index);
+  }, [selectTopic]);
 
-  // Memorizar el context value para evitar recrearlo en cada render
-  const contextValue = {
+  // Datos contextuales del debate
+  const debateContextValue: DebateContextType = {
     activeSpeaker,
     setActiveSpeaker,
     isAISpeaking,
@@ -130,17 +140,19 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
     isPaused,
     setIsPaused,
     currentTopic,
-    setCurrentTopic,
     currentTopicIndex,
-    setCurrentTopicIndex
+    currentTurnIndex,
+    currentTurnName,
+    nextTurn,
+    selectTopic,
+    // Añadimos las propiedades para el temporizador
+    remainingTime,
+    setRemainingTime,
   };
 
   return (
-    <DebateContext.Provider value={contextValue}>
+    <DebateContext.Provider value={debateContextValue}>
       <div className="w-full max-w-3xl bg-white dark:bg-gray-900 py-2">
-        {/* Debate Interventions - Manages messages and notifications during the debate */}
-        <DebateInterventions debateConfig={debateConfig} />
-
         <div className="flex flex-col space-y-5">
           {/* Central content area with visualizers, turn management and topic info */}
           <div className="flex flex-col items-center">
@@ -183,7 +195,6 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
               <TurnManagement 
                 activeSpeaker={activeSpeaker} 
                 onChangeTurn={handleTurnChange}
-                isRecording={isRecording}
                 hasRecordedContent={hasRecordedContent}
                 onSend={handleSendUserIntervention}
                 onDiscard={handleDiscardUserIntervention}
@@ -193,17 +204,25 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
             {/* Current topic and topics list */}
             <div className="flex flex-col items-center space-y-4">
               <div className="text-center">
-                <span className="text-xs text-gray-400 font-light">Current Topic:</span>
+                <span className="text-xs text-gray-400 font-light">Current Topic ({currentTopicIndex + 1}/{debateTopics.length}):</span>
                 <h3 className="text-sm text-gray-600 dark:text-gray-300 font-light mt-1">
                   {currentTopic}
                 </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  <span className="font-medium">{currentTurnName}</span>
+                  <span className="ml-1 opacity-60">(Turn {currentTurnIndex + 1} of {debateConfig.turnCount})</span>
+                </p>
               </div>
               
-              {/* Topics list button - moved to bottom */}
-              <div className="mt-2">
+              {/* Controls row - Topics list and Debate structure */}
+              <div className="mt-2 flex gap-2 justify-center">
                 <DebateTopicsList 
                   topics={debateTopics} 
                   onTopicSelect={handleTopicSelect} 
+                />
+                
+                <DebateTurnStructure 
+                  turnCount={debateConfig.turnCount} 
                 />
               </div>
               

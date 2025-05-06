@@ -20,7 +20,11 @@ interface DebateTopicsListProps {
 export default function DebateTopicsList({ topics, onTopicSelect }: DebateTopicsListProps) {
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
-  const { isPaused } = useDebateContext();
+  // Eliminamos la obtención de isPaused que no se utiliza
+  const {} = useDebateContext();
+  
+  // Handle empty topics array or single string
+  const topicsArray = Array.isArray(topics) ? topics : topics ? [topics] : [];
   
   // Usar el hook para capturar el botón volver
   useBackButton(isPopupVisible, () => setIsPopupVisible(false));
@@ -71,6 +75,7 @@ export default function DebateTopicsList({ topics, onTopicSelect }: DebateTopics
         onClick={togglePopup}
         className="text-xs px-2 py-1 rounded-md bg-gray-50/70 hover:bg-gray-100 
                  text-gray-700 font-light flex items-center transition-all"
+        aria-label="View debate topics"
       >
         <svg 
           width="14" 
@@ -90,7 +95,7 @@ export default function DebateTopicsList({ topics, onTopicSelect }: DebateTopics
           <line x1="3" y1="12" x2="3.01" y2="12"></line>
           <line x1="3" y1="18" x2="3.01" y2="18"></line>
         </svg>
-        <span>Topics</span>
+        <span>Topics{topicsArray.length > 1 ? ` (${topicsArray.length})` : ''}</span>
       </button>
       
       {/* Topics modal popup */}
@@ -134,7 +139,7 @@ export default function DebateTopicsList({ topics, onTopicSelect }: DebateTopics
                   Select a topic to progress through the debate
                 </div>
                 <ul className="space-y-2 max-h-[60vh] overflow-y-auto">
-                  {topics.map((topic, index) => {
+                  {topicsArray.map((topic, index) => {
                     // Determine topic status
                     const isCompleted = index < currentTopicIndex;
                     const isCurrent = index === currentTopicIndex;

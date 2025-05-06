@@ -36,10 +36,10 @@ export default function Auth() {
           className="mb-8 flex justify-center"
         >
           <Image 
-            src="/lexiroo-logo.svg" 
-            alt="Lexiroo Logo" 
-            width={60} 
-            height={60}
+            src="/images/Thivio.png" 
+            alt="Thivio Logo" 
+            width={100} 
+            height={100}
             priority
           />
         </motion.div>

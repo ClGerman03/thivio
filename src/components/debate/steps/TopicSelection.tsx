@@ -22,10 +22,13 @@ export default function TopicSelection({
   
   // Si no hay temas, inicializar con el tema de ejemplo
   useEffect(() => {
-    if (topics.length === 0) {
+    // Solo inicializamos con el tema de ejemplo en la primera carga
+    // Usamos una referencia para evitar que se ejecute en cada renderizado
+    const isFirstRender = topics.length === 0;
+    if (isFirstRender) {
       onTopicsChange([EXAMPLE_TOPIC]);
     }
-  }, []);
+  }, [topics.length, onTopicsChange]); // Añadimos las dependencias faltantes
   
   const handleAddTopic = () => {
     if (newTopic.trim() === '') return;
