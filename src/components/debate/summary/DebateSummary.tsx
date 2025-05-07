@@ -68,14 +68,6 @@ export default function DebateSummary({ debateConfig, onFinish }: DebateSummaryP
 
   return (
     <div className="w-full max-w-4xl py-6 px-4 mx-auto">
-      <header className="mb-10 border-b border-gray-100 dark:border-gray-800 pb-4">
-        <h1 className="text-2xl font-light text-gray-800 dark:text-white mb-1 text-center">
-          Debate Analysis
-        </h1>
-        <h2 className="text-md text-gray-500 dark:text-gray-400 font-light text-center">
-          {debateConfig.topic}
-        </h2>
-      </header>
 
       <div className="space-y-12">
         {/* Score section */}

@@ -1,19 +1,23 @@
 'use client';
 
-import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
-interface InterventionPopupProps {
+interface TurnConfirmationPopupProps {
   /**
    * Whether the popup is visible
    */
   isVisible: boolean;
   
   /**
-   * Function to close the popup
+   * Function to confirm the action
    */
-  onClose: () => void;
+  onConfirm: () => void;
+  
+  /**
+   * Function to cancel the action
+   */
+  onCancel: () => void;
   
   /**
    * Short text to display
@@ -22,27 +26,17 @@ interface InterventionPopupProps {
 }
 
 /**
- * Simple popup component for displaying intervention information
- * with a centered image and short text
+ * Popup component for confirming turn changes
+ * with two buttons: Confirm and Cancel
  */
-export default function InterventionPopup({
+export default function TurnConfirmationPopup({
   isVisible,
-  onClose,
+  onConfirm,
+  onCancel,
   text
-}: InterventionPopupProps) {
+}: TurnConfirmationPopupProps) {
   
-  // Efecto para cerrar automáticamente el popup después de 2 segundos
-  useEffect(() => {
-    if (isVisible) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 2000); // 2 segundos
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, onClose]);
-  
-  // Demo image path
+  // Demo image path - using the same as InterventionPopup
   const imageSrc = '/images/Thivio.png';
   
   return (
@@ -58,24 +52,25 @@ export default function InterventionPopup({
           {/* Semi-transparent backdrop */}
           <div 
             className="absolute inset-0 bg-black/30 dark:bg-black/50" 
+            onClick={onCancel}
           />
           
           {/* Popup content */}
           <motion.div
             className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg 
-                      w-64 mx-4 overflow-hidden"
+                      w-72 mx-4 overflow-hidden"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Image container - reduced size with more top padding */}
-            <div className="flex justify-center pt-8">
-              <div className="w-24 h-24 relative overflow-hidden rounded-full">
+            {/* Image container - reduced size */}
+            <div className="flex justify-center pt-6">
+              <div className="w-20 h-20 relative overflow-hidden rounded-full">
                 <Image
                   src={imageSrc}
-                  alt="Intervention image"
+                  alt="Turn confirmation"
                   fill
                   className="object-cover"
                   priority
@@ -89,16 +84,27 @@ export default function InterventionPopup({
                 {text}
               </p>
               
-              {/* Accept button */}
-              <button
-                onClick={onClose}
-                className="px-6 py-1.5 text-xs bg-transparent border border-gray-300 dark:border-gray-700
-                         text-gray-800 dark:text-gray-200 rounded-full
-                         hover:bg-gray-100 dark:hover:bg-gray-800/50
-                         transition-colors focus:outline-none"
-              >
-                Accept
-              </button>
+              <div className="flex justify-center space-x-4">
+                {/* Confirm button */}
+                <button
+                  onClick={onConfirm}
+                  className="px-5 py-1.5 text-xs bg-blue-600 text-white rounded-full
+                          hover:bg-blue-700 transition-colors focus:outline-none"
+                >
+                  Confirmar
+                </button>
+                
+                {/* Cancel button */}
+                <button
+                  onClick={onCancel}
+                  className="px-5 py-1.5 text-xs bg-transparent border border-gray-300 dark:border-gray-700
+                          text-gray-800 dark:text-gray-200 rounded-full
+                          hover:bg-gray-100 dark:hover:bg-gray-800/50
+                          transition-colors focus:outline-none"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.div>

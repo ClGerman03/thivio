@@ -4,6 +4,13 @@ import { motion } from 'framer-motion';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { 
+  getLearningById, 
+  saveLearning,
+  updateLearningContent, 
+  markLearningAsAnalyzed,
+  migrateLegacyData
+} from '@/services/learningService';
 import LearnOptions from '@/components/learn/LearnOptions';
 import ContentSummaries from '@/components/learn/ContentSummaries';
 import EditableText from '@/components/shared/EditableText';
@@ -21,28 +28,64 @@ export default function LearnPage() {
   const [title, setTitle] = useState('Document Analysis Tools');
   const [subtitle, setSubtitle] = useState('Choose how you&apos;d like to enhance your understanding of this document');
   
-  // Efecto para cargar los datos guardados de localStorage (simulando persistencia)
+  // Efecto para cargar los datos guardados o migrar datos antiguos
   useEffect(() => {
-    // Al usar el ID del documento, cada documento tendrá su propio título/subtítulo, archivos y contexto
-    const savedTitle = localStorage.getItem(`doc_title_${id}`);
-    const savedSubtitle = localStorage.getItem(`doc_subtitle_${id}`);
-    const savedFileName = localStorage.getItem(`doc_file_${id}`);
-    const savedText = localStorage.getItem(`doc_text_${id}`);
+    // Intentar migrar datos antiguos al nuevo formato
+    const migratedLearning = migrateLegacyData(id);
     
-    if (savedTitle) setTitle(savedTitle);
-    if (savedSubtitle) setSubtitle(savedSubtitle);
-    if (savedText) setLearningContext(savedText);
-    
-    // Si hay un archivo o texto guardado, simular que tenemos contenido generado
-    if (savedFileName || savedText) {
-      setHasGeneratedContent(true);
+    if (migratedLearning) {
+      // Actualizar los estados con los datos del learning
+      setTitle(migratedLearning.title);
+      
+      // Cargar subtítulo desde localStorage (por compatibilidad)
+      const savedSubtitle = localStorage.getItem(`doc_subtitle_${id}`);
+      if (savedSubtitle) {
+        setSubtitle(savedSubtitle);
+      }
+      
+      // Cargar contenido del learning
+      if (migratedLearning.content) {
+        if (migratedLearning.content.text) {
+          setLearningContext(migratedLearning.content.text);
+        }
+        
+        // Si hay contenido, mostrar que tenemos contenido generado
+        if (migratedLearning.content.text || 
+            (migratedLearning.content.fileNames && migratedLearning.content.fileNames.length > 0)) {
+          setHasGeneratedContent(true);
+        }
+      }
+    } else {
+      // No se encontraron datos, cargar valores por defecto
+      const defaultLearning = getLearningById(id);
+      if (defaultLearning) {
+        setTitle(defaultLearning.title);
+      }
     }
   }, [id]);
   
   // Manejadores para guardar los cambios
   const handleTitleSave = (newTitle: string) => {
     setTitle(newTitle);
-    localStorage.setItem(`doc_title_${id}`, newTitle);
+    
+    // Actualizar el título en el learning
+    const existingLearning = getLearningById(id);
+    if (existingLearning) {
+      existingLearning.title = newTitle;
+      existingLearning.updatedAt = new Date().toISOString();
+      saveLearning(existingLearning);
+    } else {
+      // Crear un nuevo learning si no existe
+      const newLearning = {
+        id,
+        title: newTitle,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'pending' as 'pending', // Especificar literal type
+        content: {}
+      };
+      saveLearning(newLearning);
+    }
   };
   
   const handleSubtitleSave = (newSubtitle: string) => {
@@ -57,9 +100,18 @@ export default function LearnPage() {
     console.log(`${files.length} archivos cargados`);
     setUploadedFiles(prev => [...prev, ...files]);
     
+    // Obtener nombres de archivos para guardar
+    const fileNames = files.map(file => file.name);
+    
+    // Actualizar el contenido del learning con los nuevos archivos
+    updateLearningContent(id, { fileNames });
+    
     // Simulate content generation after file upload
     setTimeout(() => {
       setHasGeneratedContent(true);
+      
+      // Marcar como analizado después del procesamiento
+      markLearningAsAnalyzed(id);
     }, 1000);
   };
   
@@ -68,9 +120,15 @@ export default function LearnPage() {
     console.log('Texto agregado:', text.substring(0, 50) + '...');
     setLearningContext(text);
     
+    // Actualizar el contenido del learning con el nuevo texto
+    updateLearningContent(id, { text });
+    
     // Simulate content generation after text added
     setTimeout(() => {
       setHasGeneratedContent(true);
+      
+      // Marcar como analizado después del procesamiento
+      markLearningAsAnalyzed(id);
     }, 1000);
   };
   

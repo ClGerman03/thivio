@@ -4,6 +4,7 @@ import { useState } from 'react';
 import DebateTopicsList from '../controls/DebateTopicsList';
 import DebateTurnStructure from '../controls/DebateTurnStructure';
 import DebateReviewButton from '../controls/DebateReviewButton';
+import ConfirmEndDebateDialog from './ConfirmEndDebateDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DebateControlsAreaProps {
@@ -45,9 +46,21 @@ export default function DebateControlsArea({
 }: DebateControlsAreaProps) {
   // Estado para controlar si el menú de controles está desplegado
   const [isControlsOpen, setIsControlsOpen] = useState<boolean>(false);
+  // Estado para controlar el diálogo de confirmación
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState<boolean>(false);
   
   // Función para alternar la visibilidad del menú
   const toggleControls = () => setIsControlsOpen(prev => !prev);
+  
+  // Funciones para el diálogo de confirmación
+  const openEndDialog = () => setIsEndDialogOpen(true);
+  const closeEndDialog = () => setIsEndDialogOpen(false);
+  
+  // Función para confirmar el fin del debate
+  const confirmEndDebate = () => {
+    closeEndDialog();
+    onDebateEnd();
+  };
   
   return (
     <div className="flex flex-col items-center pt-2 pb-6">
@@ -86,7 +99,7 @@ export default function DebateControlsArea({
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={onDebateEnd}
+          onClick={openEndDialog}
           className="px-4 py-1.5 text-xs text-red-500/70 dark:text-red-400/70 border border-red-200/40 dark:border-red-800/30 rounded-full hover:bg-red-50/30 dark:hover:bg-red-900/10 transition-colors flex items-center gap-1"
           aria-label="End debate"
         >
@@ -128,6 +141,13 @@ export default function DebateControlsArea({
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Confirmation dialog */}
+      <ConfirmEndDebateDialog 
+        isOpen={isEndDialogOpen}
+        onClose={closeEndDialog}
+        onConfirm={confirmEndDebate}
+      />
     </div>
   );
 }
