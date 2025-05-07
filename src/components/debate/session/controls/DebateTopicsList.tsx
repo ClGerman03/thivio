@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useDebateContext } from '../DebateSession';
+import { useDebateContext } from '@/context/DebateContext';
 import { useBackButton } from '@/hooks/useBackButton';
 
 interface DebateTopicsListProps {
@@ -73,7 +73,7 @@ export default function DebateTopicsList({ topics, onTopicSelect }: DebateTopics
       {/* Button to toggle topics popup */}
       <button 
         onClick={togglePopup}
-        className="text-xs px-2 py-1 rounded-md bg-gray-50/70 hover:bg-gray-100 
+        className="text-[10px] px-1.5 py-0.5 rounded-md bg-gray-50/70 hover:bg-gray-100 
                  text-gray-700 font-light flex items-center transition-all"
         aria-label="View debate topics"
       >

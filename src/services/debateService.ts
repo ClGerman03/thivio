@@ -15,6 +15,7 @@ export type DebateConfigData = {
   opponent: string;
   debateFormat: string;
   turnCount: number;
+  debateName: string;
   timestamp?: number;
 };
 
@@ -28,6 +29,7 @@ export const DEFAULT_DEBATE_CONFIG: DebateConfigData = {
   opponent: '',
   debateFormat: 'turn-based',
   turnCount: 3,
+  debateName: '',
 };
 
 /**

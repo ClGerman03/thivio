@@ -7,6 +7,7 @@ import TopicSelection from '@/components/debate/steps/TopicSelection';
 import InitialPositionSelection from '@/components/debate/steps/InitialPositionSelection';
 import OpponentSelection from '@/components/debate/steps/OpponentSelection';
 import DebateFormatSelection from '@/components/debate/steps/DebateFormatSelection';
+import DebateNameSelection from '@/components/debate/steps/DebateNameSelection';
 import DebateSession from '@/components/debate/session/DebateSession';
 import { DebateSummary } from '@/components/debate/summary';
 
@@ -22,6 +23,7 @@ export type DebateConfig = {
   turnCount: number;
   opponent: string;
   positions: Record<string, string>;
+  debateName: string; // Nombre del debate
   timestamp?: number; // Opcional: timestamp para seguimiento
 };
 
@@ -32,9 +34,13 @@ export type StepInfo = {
   description: string;
 };
 
-const steps = ['topic', 'initialPosition', 'opponent', 'debateFormat'];
+const steps = ['debateName', 'topic', 'initialPosition', 'opponent', 'debateFormat'];
 
 const stepInfo: Record<string, {title: string, description: string}> = {
+  debateName: {
+    title: 'Name your debate',
+    description: 'Give your debate a descriptive name'
+  },
   topic: {
     title: 'Select topics',
     description: 'Choose the topics you want to debate'
@@ -63,6 +69,7 @@ export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
     turnCount: 3, // Default number of turns
     opponent: '', // AI opponent
     positions: {}, // User's positions on each topic
+    debateName: '', // Nombre del debate
   });
   const [debateStarted, setDebateStarted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -112,12 +119,17 @@ export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
     setDebateStarted(true);
     
     // Actualizar el título y descripción para la sesión activa
-    if (onStepChange && debateConfig.topics && debateConfig.topics.length > 0) {
+    if (onStepChange) {
+      // Usar el nombre del debate como título principal si está disponible
+      const debateTitle = debateConfig.debateName && debateConfig.debateName.trim()
+        ? debateConfig.debateName
+        : (debateConfig.topics && debateConfig.topics.length > 0 ? debateConfig.topics[0] : 'Debate Session');
+      
       onStepChange({
         index: -1, // Índice especial para la sesión activa
         type: 'session',
-        title: debateConfig.topics[0], // Tomamos el primer tema como título principal
-        description: `${debateConfig.debateFormat} format • ${debateConfig.topics.length} topics`
+        title: debateTitle,
+        description: `${debateConfig.debateFormat} format • ${debateConfig.topics.length} topics • vs ${debateConfig.opponent}`
       });
     }
   };
@@ -142,28 +154,72 @@ export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
       turnCount: 3,
       opponent: '',
       positions: {},
+      debateName: '',
     });
     setCurrentStepIndex(0);
   };
 
   const validateStep = () => {
     switch (currentStep) {
+      case 'debateName':
+        return debateConfig.debateName !== '';
       case 'topic':
-        // Validar que el usuario ha ingresado al menos un tópico
-        return debateConfig.topics.length > 0 || !!debateConfig.topic.trim();
+        return debateConfig.topics.length > 0;
       case 'initialPosition':
-        // Validar que el usuario ha ingresado posiciones para todos los tópicos
+        // Verificar que se haya seleccionado una posición para cada tópico
         return debateConfig.topics.every(topic => 
-          debateConfig.positions[topic] && debateConfig.positions[topic].trim().length > 0
-        );
+          Object.keys(debateConfig.positions).includes(topic));
       case 'opponent':
-        // Validar que el usuario ha seleccionado un oponente
-        return !!debateConfig.opponent;
+        return debateConfig.opponent !== '';
       case 'debateFormat':
-        // Validar que se ha seleccionado un formato de debate
-        return !!debateConfig.debateFormat && debateConfig.turnCount > 0;
+        return debateConfig.debateFormat !== '' && debateConfig.turnCount > 0;
       default:
         return true;
+    }
+  };
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 'debateName':
+        return (
+          <DebateNameSelection 
+            debateName={debateConfig.debateName} 
+            onNameChange={(name) => updateDebateConfig('debateName', name)}
+          />
+        );
+      case 'topic':
+        return (
+          <TopicSelection 
+            topics={debateConfig.topics} 
+            onTopicsChange={(topics) => updateDebateConfig('topics', topics)}
+          />
+        );
+      case 'initialPosition':
+        return (
+          <InitialPositionSelection 
+            topics={debateConfig.topics}
+            positions={debateConfig.positions}
+            onPositionsChange={(positions) => updateDebateConfig('positions', positions)}
+          />
+        );
+      case 'opponent':
+        return (
+          <OpponentSelection 
+            selectedOpponent={debateConfig.opponent}
+            onSelectOpponent={(opponent) => updateDebateConfig('opponent', opponent)}
+          />
+        );
+      case 'debateFormat':
+        return (
+          <DebateFormatSelection 
+            selectedFormat={debateConfig.debateFormat}
+            turnCount={debateConfig.turnCount}
+            onSelectFormat={(format: string) => updateDebateConfig('debateFormat', format)}
+            onSelectTurnCount={(count: number) => updateDebateConfig('turnCount', count)}
+          />
+        );
+      default:
+        return <p>Step not implemented</p>;
     }
   };
 
@@ -182,38 +238,7 @@ export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
               transition={{ duration: 0.3 }}
               className="min-h-[300px] text-left"
             >
-              {currentStep === 'topic' && (
-                <TopicSelection 
-                  topics={debateConfig.topics}
-                  onTopicsChange={(topics: string[]) => updateDebateConfig('topics', topics)}
-                />
-              )}
-              
-              {currentStep === 'initialPosition' && (
-                <InitialPositionSelection 
-                  topics={debateConfig.topics}
-                  positions={debateConfig.positions}
-                  onPositionsChange={(positions: Record<string, string>) => updateDebateConfig('positions', positions)}
-                />
-              )}
-              
-
-              
-              {currentStep === 'opponent' && (
-                <OpponentSelection 
-                  selectedOpponent={debateConfig.opponent}
-                  onSelectOpponent={(opponent: string) => updateDebateConfig('opponent', opponent)}
-                />
-              )}
-              
-              {currentStep === 'debateFormat' && (
-                <DebateFormatSelection
-                  selectedFormat={debateConfig.debateFormat}
-                  turnCount={debateConfig.turnCount}
-                  onSelectFormat={(format) => updateDebateConfig('debateFormat', format)}
-                  onSelectTurnCount={(count) => updateDebateConfig('turnCount', count)}
-                />
-              )}
+              {renderCurrentStep()}
             </motion.div>
           </AnimatePresence>
 
