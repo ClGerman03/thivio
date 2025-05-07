@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { 
   getLearningById, 
+  getAllLearnings,
   saveLearning,
   updateLearningContent, 
   markLearningAsAnalyzed,
-  migrateLegacyData
+  migrateLegacyData,
+  Learning
 } from '@/services/learningService';
 import LearnOptions from '@/components/learn/LearnOptions';
 import ContentSummaries from '@/components/learn/ContentSummaries';
@@ -19,116 +21,176 @@ import ContentOptions from '@/components/learn/inputcontent/ContentOptions';
 export default function LearnPage() {
   const params = useParams();
   const id = params?.id as string;
+  
+  // Estados para controlar la UI y datos del learning
+  const [currentLearning, setCurrentLearning] = useState<Learning | null>(null);
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
-  // Retenemos la función setter pero comentamos la variable no utilizada
-  const [, setUploadedFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  // Estado para el contenido del learning, aunque no se usa directamente en la UI,
+  // se utiliza en la actualización de datos
   const [, setLearningContext] = useState<string>('');
   
   // Estado para almacenar el título y subtítulo editables
   const [title, setTitle] = useState('Document Analysis Tools');
-  const [subtitle, setSubtitle] = useState('Choose how you&apos;d like to enhance your understanding of this document');
+  const [subtitle, setSubtitle] = useState('Choose how you\'d like to enhance your understanding of this document');
   
-  // Efecto para cargar los datos guardados o migrar datos antiguos
+  // Efecto para cargar los datos del learning específico
   useEffect(() => {
-    // Intentar migrar datos antiguos al nuevo formato
-    const migratedLearning = migrateLegacyData(id);
+    console.log('[LearnPage] Intentando cargar learning con ID:', id);
     
-    if (migratedLearning) {
-      // Actualizar los estados con los datos del learning
-      setTitle(migratedLearning.title);
+    // Ver todos los learnings disponibles para depuración
+    const allLearnings = getAllLearnings();
+    console.log('[LearnPage] Todos los learnings disponibles:', allLearnings);
+    
+    // Primero intentamos obtener el learning directamente
+    let learning = getLearningById(id);
+    console.log('[LearnPage] Learning obtenido por ID:', learning);
+    
+    // Si no existe, intentamos migrar datos antiguos como fallback
+    if (!learning) {
+      console.log('[LearnPage] Learning no encontrado, intentando migrar datos antiguos...');
+      learning = migrateLegacyData(id);
+      console.log('[LearnPage] Resultado de migración:', learning);
+    }
+    
+    if (learning) {
+      console.log('[LearnPage] Learning encontrado, actualizando estados...');
+      // Actualizamos el estado con el learning encontrado
+      setCurrentLearning(learning);
+      setTitle(learning.title);
+      console.log('[LearnPage] Title actualizado:', learning.title);
+      
+      // Cargar el contenido del learning si existe
+      if (learning.content) {
+        // Cargar texto si existe
+        if (learning.content.text) {
+          setLearningContext(learning.content.text);
+        }
+        
+        // Verificar si hay archivos
+        const hasFiles = learning.content.fileNames && learning.content.fileNames.length > 0;
+        
+        // Si hay texto o archivos, marcar como contenido generado
+        if (learning.content.text || hasFiles) {
+          setHasGeneratedContent(true);
+        }
+      }
       
       // Cargar subtítulo desde localStorage (por compatibilidad)
+      // En futuras versiones, esto debería integrarse en el objeto learning
       const savedSubtitle = localStorage.getItem(`doc_subtitle_${id}`);
       if (savedSubtitle) {
         setSubtitle(savedSubtitle);
       }
-      
-      // Cargar contenido del learning
-      if (migratedLearning.content) {
-        if (migratedLearning.content.text) {
-          setLearningContext(migratedLearning.content.text);
-        }
-        
-        // Si hay contenido, mostrar que tenemos contenido generado
-        if (migratedLearning.content.text || 
-            (migratedLearning.content.fileNames && migratedLearning.content.fileNames.length > 0)) {
-          setHasGeneratedContent(true);
-        }
-      }
     } else {
-      // No se encontraron datos, cargar valores por defecto
-      const defaultLearning = getLearningById(id);
-      if (defaultLearning) {
-        setTitle(defaultLearning.title);
-      }
+      // Si no hay learning, crear uno nuevo con valores predeterminados
+      const newLearning = {
+        id,
+        title: 'Document Analysis Tools',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'pending' as const,
+        content: {}
+      };
+      
+      setCurrentLearning(newLearning);
+      saveLearning(newLearning);
     }
   }, [id]);
   
-  // Manejadores para guardar los cambios
+  // Manejador para guardar cambios en el título
   const handleTitleSave = (newTitle: string) => {
     setTitle(newTitle);
     
-    // Actualizar el título en el learning
-    const existingLearning = getLearningById(id);
-    if (existingLearning) {
-      existingLearning.title = newTitle;
-      existingLearning.updatedAt = new Date().toISOString();
-      saveLearning(existingLearning);
+    // Actualizar el learning actual con el nuevo título
+    if (currentLearning) {
+      const updatedLearning = {
+        ...currentLearning,
+        title: newTitle,
+        updatedAt: new Date().toISOString()
+      };
+      
+      setCurrentLearning(updatedLearning);
+      saveLearning(updatedLearning);
     } else {
-      // Crear un nuevo learning si no existe
-      const newLearning = {
+      // Si por alguna razón no existe el learning actual, crear uno nuevo
+      const newLearning: Learning = {
         id,
         title: newTitle,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        status: 'pending' as 'pending', // Especificar literal type
+        status: 'pending',
         content: {}
       };
+      
+      setCurrentLearning(newLearning);
       saveLearning(newLearning);
     }
   };
   
+  // Manejador para guardar cambios en el subtítulo
   const handleSubtitleSave = (newSubtitle: string) => {
     setSubtitle(newSubtitle);
+    
+    // Guardar en localStorage por compatibilidad con el sistema actual
+    // TODO: En futuras versiones, integrar el subtítulo en el objeto learning
     localStorage.setItem(`doc_subtitle_${id}`, newSubtitle);
   };
   
-  // Manejar la carga de archivos
+  // Manejador para la carga de archivos
   const handleFileUploaded = (files: File[]) => {
     if (files.length === 0) return;
     
     console.log(`${files.length} archivos cargados`);
-    setUploadedFiles(prev => [...prev, ...files]);
+    // Actualizar el estado de archivos
+    const newFiles = [...uploadedFiles, ...files];
+    setUploadedFiles(newFiles);
     
     // Obtener nombres de archivos para guardar
     const fileNames = files.map(file => file.name);
     
-    // Actualizar el contenido del learning con los nuevos archivos
-    updateLearningContent(id, { fileNames });
+    // Obtener nombres de archivos existentes si hay
+    const existingFileNames = currentLearning?.content?.fileNames || [];
+    const updatedFileNames = [...existingFileNames, ...fileNames];
     
-    // Simulate content generation after file upload
+    // Actualizar el contenido del learning con los nuevos archivos
+    const updatedLearning = updateLearningContent(id, { fileNames: updatedFileNames });
+    if (updatedLearning) {
+      setCurrentLearning(updatedLearning);
+    }
+    
+    // Simular generación de contenido después de la carga de archivos
     setTimeout(() => {
       setHasGeneratedContent(true);
       
       // Marcar como analizado después del procesamiento
-      markLearningAsAnalyzed(id);
+      const analyzedLearning = markLearningAsAnalyzed(id);
+      if (analyzedLearning) {
+        setCurrentLearning(analyzedLearning);
+      }
     }, 1000);
   };
   
-  // Manejar la adición de texto
+  // Manejador para la adición de texto
   const handleTextAdded = (text: string) => {
     console.log('Texto agregado:', text.substring(0, 50) + '...');
     setLearningContext(text);
     
     // Actualizar el contenido del learning con el nuevo texto
-    updateLearningContent(id, { text });
+    const updatedLearning = updateLearningContent(id, { text });
+    if (updatedLearning) {
+      setCurrentLearning(updatedLearning);
+    }
     
-    // Simulate content generation after text added
+    // Simular generación de contenido después de agregar texto
     setTimeout(() => {
       setHasGeneratedContent(true);
       
       // Marcar como analizado después del procesamiento
-      markLearningAsAnalyzed(id);
+      const analyzedLearning = markLearningAsAnalyzed(id);
+      if (analyzedLearning) {
+        setCurrentLearning(analyzedLearning);
+      }
     }, 1000);
   };
   
@@ -173,6 +235,8 @@ export default function LearnPage() {
             documentId={id}
             onFileUploaded={handleFileUploaded}
             onTextAdded={handleTextAdded}
+            initialText={currentLearning?.content?.text || ''}
+            initialFileNames={currentLearning?.content?.fileNames || []}
           />
         </div>
         

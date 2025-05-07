@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { getDebatesByLearningId, getSavedDebates } from '@/services/debateService';
 
 type Summary = {
   id: string;
@@ -16,10 +17,41 @@ interface ContentSummariesProps {
   documentId: string;
 }
 
-export default function ContentSummaries({ /* documentId */ }: ContentSummariesProps) {
-  // In a real app, we would fetch this data from an API using the documentId
-  const [summaries] = useState<Summary[]>([]);
-  // Comentamos setSummaries ya que no se utiliza en este componente de demostración
+export default function ContentSummaries({ documentId }: ContentSummariesProps) {
+  const [summaries, setSummaries] = useState<Summary[]>([]);
+  
+  // Cargar los debates relacionados con este learning cuando el componente se monta
+  useEffect(() => {
+    // Agregar depuración para ver el ID del documento que estamos buscando
+    console.log('ContentSummaries: Buscando debates para el learning ID:', documentId);
+    
+    // Obtener todos los debates para depuración
+    const allDebates = getSavedDebates();
+    console.log('ContentSummaries: Todos los debates guardados:', allDebates);
+    
+    // Obtener debates relacionados con este learning
+    const relatedDebates = getDebatesByLearningId(documentId);
+    console.log('ContentSummaries: Debates relacionados encontrados:', relatedDebates);
+    
+    // Convertir los debates al formato de Summary para mostrarlos
+    const debateSummaries = relatedDebates.map(debate => ({
+      id: debate.id,
+      title: debate.debateName || `Debate: ${debate.topics[0] || ''}`,
+      excerpt: `Topics: ${debate.topics.join(', ')}`,
+      type: 'debate' as const,
+      createdAt: new Date(debate.timestamp || Date.now()).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    }));
+    
+    console.log('ContentSummaries: Resúmenes de debate creados:', debateSummaries);
+    setSummaries(debateSummaries);
+  }, [documentId]);
+  
+  // Ya no necesitamos crear debates de ejemplo
+  // Ahora confiamos en los debates reales guardados en localStorage
 
   if (summaries.length === 0) {
     return (

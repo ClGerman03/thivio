@@ -11,7 +11,7 @@ interface ContentInputModalProps {
   onClose: () => void;
   onFileSubmit: (files: File[]) => void;
   onTextSubmit: (text: string) => void;
-  existingFileName?: string;
+  existingFileName?: string[] | string;
   existingText?: string;
 }
 
@@ -25,11 +25,30 @@ export default function ContentInputModal({
 }: ContentInputModalProps) {
   // File states
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [existingFiles, setExistingFiles] = useState<string[]>(existingFileName ? [existingFileName] : []);
+  const [existingFiles, setExistingFiles] = useState<string[]>(() => {
+    if (!existingFileName) return [];
+    if (Array.isArray(existingFileName)) return existingFileName;
+    return [existingFileName];
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Text state
   const [text, setText] = useState(existingText || '');
+  
+  // Actualizar los estados cuando cambian las props
+  useEffect(() => {
+    if (existingText) {
+      setText(existingText);
+    }
+    
+    if (existingFileName) {
+      if (Array.isArray(existingFileName)) {
+        setExistingFiles(existingFileName);
+      } else {
+        setExistingFiles([existingFileName]);
+      }
+    }
+  }, [existingText, existingFileName]);
   
   // References
   const modalRef = useRef<HTMLDivElement>(null);

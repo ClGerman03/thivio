@@ -24,6 +24,10 @@ export default function TurnManagement({
   // Acceder al contexto para obtener información sobre el turno actual
   const { currentTurnName } = useDebateContext();
   
+  // Estado para controlar la visibilidad del popup de confirmación
+  // IMPORTANTE: Todos los hooks deben estar al inicio del componente
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  
   // Si el usuario ha terminado de grabar y tiene contenido
   if (activeSpeaker === 'user' && hasRecordedContent) {
     return (
@@ -58,10 +62,7 @@ export default function TurnManagement({
     );
   }
   
-  // Estado para controlar la visibilidad del popup de confirmación
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  
-  // Función para mostrar el popup de confirmación
+  // Función para manejar el cambio de turno
   const handleTurnChangeClick = () => {
     // Si el turno activo es del usuario, mostrar el popup de confirmación
     if (activeSpeaker === 'user') {

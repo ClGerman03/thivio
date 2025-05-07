@@ -22,6 +22,11 @@ export default function EditableText({
   const [text, setText] = useState(initialText);
   const inputRef = useRef<HTMLInputElement>(null);
   
+  // Actualizar el texto cuando cambie initialText
+  useEffect(() => {
+    setText(initialText);
+  }, [initialText]);
+  
   // Aplicar clases base según el elemento
   const getBaseClasses = () => {
     switch (as) {

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { saveDebateConfig, loadDebateConfig, generateDebateSessionData } from '@/services/debateService';
+import { saveDebateConfig, loadDebateConfig, generateDebateSessionData, saveCompletedDebate } from '@/services/debateService';
 import TopicSelection from '@/components/debate/steps/TopicSelection';
 import InitialPositionSelection from '@/components/debate/steps/InitialPositionSelection';
 import OpponentSelection from '@/components/debate/steps/OpponentSelection';
@@ -12,11 +12,13 @@ import DebateSession from '@/components/debate/session/DebateSession';
 import { DebateSummary } from '@/components/debate/summary';
 
 type DebateWorkflowProps = {
-  documentId: string;
+  documentId: string; // ID del debate (ahora este es el ID único del debate)
+  learningId: string; // ID del learning relacionado
   onStepChange?: (stepInfo: StepInfo) => void;
 };
 
 export type DebateConfig = {
+  id: string; // ID único del debate
   topic: string;
   topics: string[];
   debateFormat: string;
@@ -25,6 +27,7 @@ export type DebateConfig = {
   positions: Record<string, string>;
   debateName: string; // Nombre del debate
   timestamp?: number; // Opcional: timestamp para seguimiento
+  learningId: string; // ID del learning relacionado
 };
 
 export type StepInfo = {
@@ -59,17 +62,39 @@ const stepInfo: Record<string, {title: string, description: string}> = {
   }
 };
 
-export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
+export default function DebateWorkflow({ documentId, learningId, onStepChange }: DebateWorkflowProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  
   // Cargar la configuración del debate desde localStorage o usar valores por defecto
-  const [debateConfig, setDebateConfig] = useState<DebateConfig>(loadDebateConfig() || {
-    topic: '',
-    topics: [], // Array de tópicos
-    debateFormat: 'turn-based', // Default format
-    turnCount: 3, // Default number of turns
-    opponent: '', // AI opponent
-    positions: {}, // User's positions on each topic
-    debateName: '', // Nombre del debate
+  // Usamos el documentId para cargar la configuración específica de este debate
+  const [debateConfig, setDebateConfig] = useState<DebateConfig>(() => {
+    // Cargar la configuración específica para este debate usando su ID
+    const savedConfig = loadDebateConfig(documentId);
+    console.log(`DebateWorkflow - Cargando configuración para debate ID: ${documentId}`);
+    
+    // Si tenemos una configuración guardada con datos
+    if (savedConfig && savedConfig.id === documentId) {
+      console.log('DebateWorkflow - Configuración existente encontrada');
+      // Asegurarnos que el learningId esté actualizado
+      return {
+        ...savedConfig,
+        learningId: learningId
+      };
+    }
+    
+    // Si no hay configuración guardada para este debate específico, crear una nueva
+    console.log('DebateWorkflow - Creando nueva configuración de debate');
+    return {
+      id: documentId,
+      topic: '',
+      topics: [],
+      debateFormat: 'turn-based',
+      turnCount: 3,
+      opponent: '',
+      positions: {},
+      debateName: '',
+      learningId: learningId
+    };
   });
   const [debateStarted, setDebateStarted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -103,17 +128,41 @@ export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
     }
   };
 
-  const updateDebateConfig = <T extends keyof DebateConfig>(key: T, value: DebateConfig[T]) => {
+  // Optimizamos updateDebateConfig con useCallback para evitar recreaciones innecesarias
+  // y prevenimos actualizaciones redundantes que pueden causar bucles
+  const updateDebateConfig = useCallback(<T extends keyof DebateConfig>(key: T, value: DebateConfig[T]) => {
+    // Prevenir actualizaciones redundantes que pueden causar bucles infinitos
+    if (debateConfig[key] === value) {
+      return; // Si el valor no ha cambiado, no hacemos nada
+    }
+    
+    // Crear una nueva configuración con el valor actualizado
     const updatedConfig = { ...debateConfig, [key]: value };
+    
+    // Actualizar el estado local
     setDebateConfig(updatedConfig);
-    // Persistir la configuración actualizada
-    saveDebateConfig(updatedConfig);
-  };
+    
+    // Persistir la configuración de forma segura (asegurándonos que tiene un ID)
+    if (updatedConfig.id) {
+      // Usamos setTimeout para evitar que la persistencia bloquee el renderizado
+      setTimeout(() => {
+        saveDebateConfig(updatedConfig);
+      }, 0);
+    }
+  }, [debateConfig]); // Dependencias del useCallback
 
   const handleSubmit = () => {
+    // Asegurarnos de que tanto el ID del debate como el ID del learning
+    // están incluidos en la configuración
+    const finalConfig = {
+      ...debateConfig,
+      id: documentId, // ID del debate
+      learningId: learningId // ID del learning relacionado
+    };
+    
     // Guardar la configuración final del debate
-    saveDebateConfig(debateConfig);
-    console.log('Starting debate with configuration:', debateConfig);
+    saveDebateConfig(finalConfig);
+    console.log('Starting debate with configuration:', finalConfig);
     
     // Iniciar el debate
     setDebateStarted(true);
@@ -141,13 +190,17 @@ export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
   };
   
   const handleSummaryFinish = () => {
-    // Finalizar todo el proceso y volver al inicio
-    console.log('Summary finished, returning to start');
-    setShowSummary(false);
-    setDebateStarted(false);
+    // Guardar el debate completo en el almacenamiento antes de resetear
+    // Usamos tanto el ID del debate como el ID del learning para mantener la relación
+    saveCompletedDebate(debateConfig, learningId);
     
-    // Opcionalmente, resetear la configuración si quieres que el usuario empiece de cero
-    setDebateConfig({
+    // Al terminar el resumen, reseteamos todo el flujo
+    setDebateStarted(false);
+    setShowSummary(false);
+    
+    // Limpiamos la configuración del debate pero CONSERVAMOS el learningId
+    const emptyConfig: DebateConfig = {
+      id: '', // Limpiar ID para un posible nuevo debate
       topic: '',
       topics: [],
       debateFormat: 'turn-based',
@@ -155,8 +208,14 @@ export default function DebateWorkflow({ onStepChange }: DebateWorkflowProps) {
       opponent: '',
       positions: {},
       debateName: '',
-    });
-    setCurrentStepIndex(0);
+      learningId: learningId // Mantener el learningId para asegurar la relación
+    };
+    
+    // Verificar y loggear para debug
+    console.log('Reseteando configuración pero manteniendo learningId:', learningId);
+    
+    setDebateConfig(emptyConfig);
+    saveDebateConfig(emptyConfig);
   };
 
   const validateStep = () => {

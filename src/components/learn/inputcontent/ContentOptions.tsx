@@ -20,30 +20,55 @@ interface ContentOptionsProps {
   documentId: string;
   onFileUploaded?: (files: File[]) => void;
   onTextAdded?: (text: string) => void;
+  initialText?: string;
+  initialFileNames?: string[];
 }
 
-export default function ContentOptions({ documentId, onFileUploaded, onTextAdded }: ContentOptionsProps) {
+export default function ContentOptions({ 
+  documentId, 
+  onFileUploaded, 
+  onTextAdded,
+  initialText = '',
+  initialFileNames = []
+}: ContentOptionsProps) {
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
   const [hasUploadedFile, setHasUploadedFile] = useState(false);
   const [hasAddedText, setHasAddedText] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [savedText, setSavedText] = useState('');
 
-  // Check if there are files or text when the component loads
+  // Inicializar los estados con datos del learning si existen
   useEffect(() => {
-    const savedFileName = localStorage.getItem(`doc_file_${documentId}`);
-    const storedText = localStorage.getItem(`doc_text_${documentId}`);
-
-    if (savedFileName) {
-      setHasUploadedFile(true);
-      setUploadedFileName(savedFileName);
-    }
-
-    if (storedText) {
+    // Si hay texto inicial, actualizamos el estado
+    if (initialText && initialText.trim() !== '') {
       setHasAddedText(true);
-      setSavedText(storedText);
+      setSavedText(initialText);
     }
-  }, [documentId]);
+
+    // Si hay archivos iniciales, actualizamos el estado
+    if (initialFileNames && initialFileNames.length > 0) {
+      setHasUploadedFile(true);
+      const fileCount = initialFileNames.length;
+      setUploadedFileName(`${fileCount} ${fileCount === 1 ? 'file' : 'files'}`);
+    }
+    
+    // Compatibilidad con el sistema anterior (localStorage)
+    // Solo usar si no hay datos iniciales proporcionados
+    if (!initialText && !initialFileNames.length) {
+      const savedFileName = localStorage.getItem(`doc_file_${documentId}`);
+      const storedText = localStorage.getItem(`doc_text_${documentId}`);
+
+      if (savedFileName) {
+        setHasUploadedFile(true);
+        setUploadedFileName(savedFileName);
+      }
+
+      if (storedText) {
+        setHasAddedText(true);
+        setSavedText(storedText);
+      }
+    }
+  }, [documentId, initialText, initialFileNames]);
 
   const handleContentIconClick = () => {
     // Open the combined content modal
@@ -66,17 +91,14 @@ export default function ContentOptions({ documentId, onFileUploaded, onTextAdded
   const handleFileSubmit = (files: File[]) => {
     if (files.length === 0) return;
 
-    const fileNames = files.map(file => file.name).join(', ');
+    // Actualizamos la UI local
+    setHasUploadedFile(true);
+    setUploadedFileName(`${files.length} ${files.length === 1 ? 'file' : 'files'}`);
 
-    // Save file names to localStorage for persistence
-    localStorage.setItem(`doc_file_${documentId}`, fileNames);
-
+    // Enviamos los archivos al callback principal
     if (onFileUploaded) {
       onFileUploaded(files);
     }
-
-    setHasUploadedFile(true);
-    setUploadedFileName(`${files.length} ${files.length === 1 ? 'file' : 'files'}`);
   };
 
   return (
@@ -168,8 +190,8 @@ export default function ContentOptions({ documentId, onFileUploaded, onTextAdded
         onClose={() => setIsContentModalOpen(false)}
         onFileSubmit={handleFileSubmit}
         onTextSubmit={handleTextSubmit}
-        existingFileName={uploadedFileName}
-        existingText={savedText}
+        existingFileName={initialFileNames || (uploadedFileName ? [uploadedFileName] : [])}
+        existingText={initialText || savedText}
       />
     </div>
   );

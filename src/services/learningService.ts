@@ -215,7 +215,7 @@ export const markLearningAsAnalyzed = (id: string): Learning | null => {
  */
 export const migrateLegacyData = (id: string): Learning | null => {
   // Intentar obtener el learning existente
-  let learning = getLearningById(id);
+  const learning = getLearningById(id);
   
   // Verificar si ya tiene contenido
   if (learning && learning.content && 

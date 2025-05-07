@@ -1,17 +1,33 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DebateWorkflow, StepInfo } from '@/components/debate';
 
 export default function DebatePage() {
   const params = useParams();
-  const id = params?.id as string;
+  const searchParams = useSearchParams();
+  
+  // El ID de la ruta es el ID del debate
+  const debateId = params?.id as string;
+  
+  // El ID del learning viene como parámetro de consulta
+  const [learningId, setLearningId] = useState<string | null>(null);
   const [isLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<StepInfo | null>(null);
-  const [sourceDocumentId] = useState<string | null>(null);
+  
+  // Capturar el learningId de los parámetros de consulta
+  useEffect(() => {
+    const learningIdParam = searchParams.get('learningId');
+    if (learningIdParam) {
+      setLearningId(learningIdParam);
+    }
+  }, [searchParams]);
+  
+  // El learningId es el sourceDocumentId para navegar de vuelta al learning
+  const sourceDocumentId = learningId;
 
   // In a real app, we would fetch the debate data and its associated sourceDocumentId
   // For now, we'll skip the loading state since we don't need to fetch anything in this mock
@@ -67,7 +83,8 @@ export default function DebatePage() {
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <DebateWorkflow 
-              documentId={id} 
+              documentId={debateId} 
+              learningId={learningId || ''}
               onStepChange={setCurrentStep}
             />
           </motion.div>

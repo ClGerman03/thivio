@@ -7,6 +7,7 @@
 export const STORAGE_KEYS = {
   DEBATE_CONFIG: 'lexiroo_debate_config',
   USER_LEARNINGS: 'lexiroo_user_learnings',
+  SAVED_DEBATES: 'lexiroo_saved_debates', // Clave para debates guardados
 };
 
 /**
