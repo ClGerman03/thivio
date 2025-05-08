@@ -25,10 +25,10 @@ interface DebateConfig {
  */
 export function useDebateState(debateConfig: DebateConfig) {
   // Basic activity states
-  const [activeSpeaker, setActiveSpeaker] = useState<'user' | 'ai' | null>('ai');
-  const [isAISpeaking, setIsAISpeaking] = useState<boolean>(true);
+  const [activeSpeaker, setActiveSpeaker] = useState<'user' | 'ai' | null>('user');
+  const [isAISpeaking, setIsAISpeaking] = useState<boolean>(false);
   const [isAIThinking, setIsAIThinking] = useState<boolean>(false);
-  const [isUserSpeaking, setIsUserSpeaking] = useState<boolean>(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState<boolean>(true);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [hasRecordedContent, setHasRecordedContent] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);

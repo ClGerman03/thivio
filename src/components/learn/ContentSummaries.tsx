@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { getDebatesByLearningId, getSavedDebates } from '@/services/debateService';
 
 type Summary = {
@@ -18,6 +19,7 @@ interface ContentSummariesProps {
 }
 
 export default function ContentSummaries({ documentId }: ContentSummariesProps) {
+  const router = useRouter();
   const [summaries, setSummaries] = useState<Summary[]>([]);
   
   // Cargar los debates relacionados con este learning cuando el componente se monta
@@ -94,11 +96,15 @@ export default function ContentSummaries({ documentId }: ContentSummariesProps) 
         {summaries.map((summary, index) => (
           <motion.div
             key={summary.id}
-            className="border border-gray-100 dark:border-gray-800 rounded-lg overflow-hidden hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+            className="border border-gray-100 dark:border-gray-800 rounded-lg overflow-hidden hover:border-gray-200 dark:hover:border-gray-700 transition-colors cursor-pointer group"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
             whileHover={{ scale: 1.005 }}
+            onClick={() => {
+              // Navegar a la página de debate con el ID de learning como queryParam
+              router.push(`/debates/${summary.id}?learningId=${documentId}`);
+            }}
           >
             <div className="flex items-center p-2.5">
               <div className="flex-1 min-w-0">
@@ -125,14 +131,11 @@ export default function ContentSummaries({ documentId }: ContentSummariesProps) 
                 </p>
               </div>
               
-              <button 
-                className="ml-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="View details"
-              >
+              <div className="ml-2 p-1 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 rounded-full group-hover:bg-gray-100 dark:group-hover:bg-gray-800 transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
-              </button>
+              </div>
             </div>
           </motion.div>
         ))}

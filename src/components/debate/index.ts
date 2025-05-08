@@ -1,4 +1,4 @@
-export { default as DebateWorkflow, type StepInfo, type DebateConfig } from './DebateWorkflow';
+export { default as DebateWorkflow, type StepInfo } from './DebateWorkflow';
 
 // Exportación explícita de los componentes de pasos
 export { default as TopicSelection } from './steps/TopicSelection';

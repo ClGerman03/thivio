@@ -58,7 +58,7 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
   } = useDebateInterventions(debateState, debateConfig);
   
   // Debate summary generator
-  const { generateSummary } = useDebateSummary(interventions, debateConfig, opponentName);
+  const { generateTextSummary } = useDebateSummary(interventions, debateConfig);
   
   // Topic selection handler
   const handleTopicSelect = (topic: string, index: number) => {
@@ -123,8 +123,11 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
               topics={debateConfig.topics || [debateConfig.topic]}
               onTopicSelect={handleTopicSelect}
               turnCount={debateConfig.turnCount}
-              onGenerateSummary={generateSummary}
-              onDebateEnd={onDebateEnd}
+              onGenerateSummary={generateTextSummary}
+              onDebateEnd={() => {
+                console.log('Finalizando debate desde DebateSession');
+                onDebateEnd();
+              }}
             />
           </div>
         </div>

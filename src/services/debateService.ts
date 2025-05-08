@@ -10,6 +10,13 @@ export type StoredDebate = DebateConfigData & {
   createdAt: string;
 };
 
+// Tipo para las referencias a debates completados
+export type CompletedDebateReference = {
+  id: string;
+  timestamp: number;
+  learningId: string;
+};
+
 /**
  * Type definition for debate configuration
  */
@@ -24,6 +31,7 @@ export type DebateConfigData = {
   debateName: string;
   timestamp?: number;
   learningId: string; // ID del learning relacionado (requerido)
+  isCompleted?: boolean; // Indica si el debate ha sido completado
 };
 
 /**
@@ -39,6 +47,7 @@ export const DEFAULT_DEBATE_CONFIG: DebateConfigData = {
   turnCount: 3,
   debateName: '',
   learningId: '',
+  isCompleted: false,
 };
 
 /**
@@ -82,76 +91,96 @@ export const saveDebateConfig = (config: DebateConfigData): boolean => {
  * @returns El ID del debate guardado
  */
 export const saveCompletedDebate = (config: DebateConfigData, learningId?: string): string => {
-  // Obtener debates guardados existentes
-  const savedDebates = getSavedDebates();
-  console.log('Debates existentes antes de guardar:', savedDebates);
+  console.log('Guardando debate completado. Debate actual:', config);
   
   // Usar el ID existente del debate, o generar uno nuevo si no existe
   const debateId = config.id || `debate-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  const newDebate: StoredDebate = {
+  const timestamp = Date.now();
+  
+  // 1. Actualizar el debate original en su clave específica
+  const updatedDebate: DebateConfigData = {
     ...config,
-    id: debateId, // Mantener el ID existente o usar el nuevo
-    learningId: learningId || config.learningId, // Usar el learningId proporcionado o mantener el actual
-    createdAt: new Date().toISOString(),
-    timestamp: Date.now(),
+    id: debateId,
+    learningId: learningId || config.learningId,
+    isCompleted: true, // Marcar debate como completado
+    timestamp: timestamp,
   };
   
-  console.log('Nuevo debate a guardar:', newDebate);
-  console.log('Learning ID relacionado:', newDebate.learningId);
+  // Guardar el debate actualizado en su clave específica
+  const debateKey = `${STORAGE_KEYS.DEBATE_CONFIG}_${debateId}`;
+  const updateResult = setStorageItem(debateKey, updatedDebate);
+  console.log(`Debate ${debateId} actualizado con isCompleted=true. Resultado:`, updateResult);
   
-  // Verificar si ya existe un debate con este ID
-  const existingIndex = savedDebates.findIndex(debate => debate.id === debateId);
+  // 2. Mantener una referencia al debate completado en SAVED_DEBATES
+  // Estas referencias son más ligeras y evitan duplicación de datos
+  const completedReference: CompletedDebateReference = {
+    id: debateId,
+    timestamp: timestamp,
+    learningId: updatedDebate.learningId,
+  };
+  
+  // Obtener referencias existentes
+  const savedReferences = getStorageItem<CompletedDebateReference[]>(STORAGE_KEYS.SAVED_DEBATES, []);
+  
+  // Verificar si ya existe una referencia a este debate
+  const existingIndex = savedReferences.findIndex(ref => ref.id === debateId);
   
   if (existingIndex >= 0) {
-    // Actualizar el debate existente
-    savedDebates[existingIndex] = newDebate;
-    console.log('Actualizando debate existente en índice:', existingIndex);
+    // Actualizar la referencia existente
+    savedReferences[existingIndex] = completedReference;
+    console.log('Actualizando referencia existente');
   } else {
-    // Añadir el nuevo debate a la lista
-    savedDebates.push(newDebate);
-    console.log('Añadiendo nuevo debate a la lista');
+    // Añadir la nueva referencia
+    savedReferences.push(completedReference);
+    console.log('Añadiendo nueva referencia a debates completados');
   }
   
-  // Guardar la lista actualizada
-  const saveResult = setStorageItem(STORAGE_KEYS.SAVED_DEBATES, savedDebates);
-  console.log('Resultado de guardar debates:', saveResult, 'Total debates guardados:', savedDebates.length);
+  // Guardar la lista actualizada de referencias
+  const saveResult = setStorageItem(STORAGE_KEYS.SAVED_DEBATES, savedReferences);
+  console.log('Referencias de debates completados guardadas:', saveResult);
+  
+  // Ya no es necesario eliminar de la lista de activos, ya que
+  // el debate sigue en su clave original pero con isCompleted=true
   
   return debateId;
 };
 
 /**
- * Obtiene todos los debates guardados
+ * Obtiene todos los debates guardados como completados
  * @returns Array de debates guardados
  */
 export const getSavedDebates = (): StoredDebate[] => {
-  // Inspeccionar directamente localStorage para depurar
-  try {
-    console.log('getSavedDebates - Inspeccionando localStorage directamente');
-    const rawData = localStorage.getItem(STORAGE_KEYS.SAVED_DEBATES);
-    console.log('getSavedDebates - Datos crudos en localStorage:', rawData);
+  console.log('getSavedDebates - Obteniendo debates completados');
+  
+  // Obtener las referencias a debates completados
+  const completedReferences = getStorageItem<CompletedDebateReference[]>(STORAGE_KEYS.SAVED_DEBATES, []);
+  console.log(`getSavedDebates - Encontradas ${completedReferences.length} referencias a debates completados`);
+  
+  // Array para almacenar los debates completos
+  const debates: StoredDebate[] = [];
+  
+  // Cargar cada debate desde su ubicación individual
+  for (const reference of completedReferences) {
+    const debateKey = `${STORAGE_KEYS.DEBATE_CONFIG}_${reference.id}`;
+    const debate = getStorageItem<DebateConfigData | undefined>(debateKey, undefined);
     
-    // Si hay datos, intentar mostrarlos parseados para diagnóstico
-    if (rawData) {
-      try {
-        const parsedData = JSON.parse(rawData);
-        console.log('getSavedDebates - Datos parseados:', parsedData);
-        console.log('getSavedDebates - ¿Es un array?', Array.isArray(parsedData));
-        console.log('getSavedDebates - Longitud:', Array.isArray(parsedData) ? parsedData.length : 'N/A');
-      } catch (parseError) {
-        console.error('getSavedDebates - Error al parsear datos:', parseError);
-      }
+    if (debate) {
+      // Convertir a StoredDebate añadiendo createdAt si es necesario
+      const storedDebate: StoredDebate = {
+        ...debate,
+        createdAt: debate.timestamp ? new Date(debate.timestamp).toISOString() : new Date(reference.timestamp).toISOString()
+      };
+      debates.push(storedDebate);
+    } else {
+      console.warn(`getSavedDebates - No se encontró el debate ${reference.id} referenciado en SAVED_DEBATES`);
     }
-  } catch (error) {
-    console.error('getSavedDebates - Error al acceder a localStorage directamente:', error);
   }
   
-  // Obtener los debates usando la función estándar
-  const debates = getStorageItem<StoredDebate[]>(STORAGE_KEYS.SAVED_DEBATES, []);
-  console.log('getSavedDebates - Total debates encontrados con getStorageItem:', debates.length);
+  console.log(`getSavedDebates - Total debates completados cargados: ${debates.length}`);
   
-  // Verificación adicional de los datos
+  // Verificación adicional de los datos para depuración
   if (debates.length > 0) {
-    console.log('getSavedDebates - Primer debate:', debates[0]);
+    console.log('getSavedDebates - Primer debate completado:', debates[0]);
     console.log('getSavedDebates - IDs de learnings relacionados:', debates.map(d => d.learningId));
   }
   
@@ -163,35 +192,80 @@ export const getSavedDebates = (): StoredDebate[] => {
  * @param learningId ID del learning
  * @returns Array de debates relacionados con el learning
  */
+/**
+ * Elimina un debate de la lista de debates activos
+ * @param debateId ID del debate a eliminar
+ */
+export const removeDebateFromActiveList = (debateId: string): void => {
+  // Obtener la lista actual de IDs de debates activos
+  const activeDebateIds = getStorageItem<string[]>('active_debate_ids', []);
+  
+  // Filtrar el ID del debate que queremos eliminar
+  const filteredIds = activeDebateIds.filter(id => id !== debateId);
+  
+  // Guardar la nueva lista sin el debate eliminado
+  if (activeDebateIds.length !== filteredIds.length) {
+    console.log(`removeDebateFromActiveList - Eliminando debate ${debateId} de debates activos`);
+    setStorageItem('active_debate_ids', filteredIds);
+  }
+};
+
 export const getDebatesByLearningId = (learningId: string): StoredDebate[] => {
   console.log(`getDebatesByLearningId - Buscando debates para learning ID: ${learningId}`);
   
-  // Combinar debates de ambas fuentes: los completados y los activos
+  // Array para almacenar todos los debates relacionados
   const relatedDebates: StoredDebate[] = [];
   
-  // 1. Buscar en los debates completados (SAVED_DEBATES)
-  const savedDebates = getSavedDebates();
-  const savedRelatedDebates = savedDebates.filter(debate => debate.learningId === learningId);
-  console.log(`getDebatesByLearningId - Encontrados ${savedRelatedDebates.length} debates completados`);
-  relatedDebates.push(...savedRelatedDebates);
+  // Set para seguir los IDs de debates ya procesados
+  const processedDebateIds = new Set<string>();
   
-  // 2. Buscar en los debates activos usando sus IDs individuales
+  // 1. Obtener todas las referencias a debates completados
+  const completedReferences = getStorageItem<CompletedDebateReference[]>(STORAGE_KEYS.SAVED_DEBATES, []);
+  const relatedReferences = completedReferences.filter(ref => ref.learningId === learningId);
+  console.log(`getDebatesByLearningId - Encontradas ${relatedReferences.length} referencias a debates completados relacionados`);
+  
+  // 2. Obtener todos los IDs de debates (completados y activos)
+  const allDebateIds = new Set<string>();
+  
+  // Añadir IDs de debates completados
+  relatedReferences.forEach(ref => allDebateIds.add(ref.id));
+  
+  // Añadir IDs de debates activos
   const activeDebateIds = getStorageItem<string[]>('active_debate_ids', []);
-  console.log(`getDebatesByLearningId - Verificando ${activeDebateIds.length} debates activos`);
+  activeDebateIds.forEach(id => allDebateIds.add(id));
   
-  for (const debateId of activeDebateIds) {
-    const debateKey = `${STORAGE_KEYS.DEBATE_CONFIG}_${debateId}`;
-    const debate = getStorageItem<DebateConfigData | undefined>(debateKey, undefined);
-    
-    // Si el debate existe y pertenece al learning solicitado
-    if (debate && debate.learningId === learningId) {
-      console.log(`getDebatesByLearningId - Encontrado debate activo: ${debate.id}`);
-      // Convertir a StoredDebate añadiendo createdAt si no existe
-      const storedDebate: StoredDebate = {
-        ...debate,
-        createdAt: debate.timestamp ? new Date(debate.timestamp).toISOString() : new Date().toISOString()
-      };
-      relatedDebates.push(storedDebate);
+  // 3. Para cada ID, intentar cargar el debate y verificar si está relacionado
+  console.log(`getDebatesByLearningId - Verificando ${allDebateIds.size} debates posibles`);
+  
+  for (const debateId of allDebateIds) {
+    // Verificar que este debate no ya esté procesado
+    if (!processedDebateIds.has(debateId)) {
+      const debateKey = `${STORAGE_KEYS.DEBATE_CONFIG}_${debateId}`;
+      const debate = getStorageItem<DebateConfigData | undefined>(debateKey, undefined);
+      
+      // Si el debate existe, está relacionado con el learning y no ha sido eliminado
+      if (debate && debate.learningId === learningId) {
+        // Decidir si incluirlo basado en su estado de completitud
+        // Los debates completados tienen prioridad
+        if (debate.isCompleted) {
+          console.log(`getDebatesByLearningId - Encontrado debate completado: ${debate.id}`);
+          const storedDebate: StoredDebate = {
+            ...debate,
+            createdAt: debate.timestamp ? new Date(debate.timestamp).toISOString() : new Date().toISOString()
+          };
+          relatedDebates.push(storedDebate);
+        } else {
+          // Solo incluir debates activos si no han sido completados
+          console.log(`getDebatesByLearningId - Encontrado debate activo: ${debate.id}`);
+          const storedDebate: StoredDebate = {
+            ...debate,
+            createdAt: debate.timestamp ? new Date(debate.timestamp).toISOString() : new Date().toISOString()
+          };
+          relatedDebates.push(storedDebate);
+        }
+        
+        processedDebateIds.add(debateId);
+      }
     }
   }
   

@@ -5,6 +5,14 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { DebateWorkflow, StepInfo } from '@/components/debate';
+import { STORAGE_KEYS } from '@/services/storageService';
+
+// Interfaz para debates guardados
+interface SavedDebate {
+  id: string;
+  isCompleted?: boolean;
+  // Agrega aquí otras propiedades que puedan estar en un debate guardado
+}
 
 export default function DebatePage() {
   const params = useParams();
@@ -15,16 +23,47 @@ export default function DebatePage() {
   
   // El ID del learning viene como parámetro de consulta
   const [learningId, setLearningId] = useState<string | null>(null);
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<StepInfo | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
   
-  // Capturar el learningId de los parámetros de consulta
+  // Capturar el learningId de los parámetros de consulta y verificar si el debate está completado
   useEffect(() => {
     const learningIdParam = searchParams.get('learningId');
     if (learningIdParam) {
       setLearningId(learningIdParam);
     }
-  }, [searchParams]);
+    
+    // Verificar si es un debate completado
+    if (debateId) {
+      // Intentar cargarlo desde localStorage usando la clave correcta
+      const debateKey = `${STORAGE_KEYS.DEBATE_CONFIG}_${debateId}`;
+      try {
+        const savedDebateStr = localStorage.getItem(debateKey);
+        if (savedDebateStr) {
+          const savedDebate = JSON.parse(savedDebateStr);
+          setIsCompleted(savedDebate.isCompleted === true);
+          console.log(`Debate ${debateId} cargado. Estado completado:`, savedDebate.isCompleted);
+        } else {
+          // También verificar en los debates guardados completados
+          const savedDebatesStr = localStorage.getItem(STORAGE_KEYS.SAVED_DEBATES);
+          if (savedDebatesStr) {
+            const savedDebates = JSON.parse(savedDebatesStr) as SavedDebate[];
+            const matchingDebate = savedDebates.find((debate: SavedDebate) => debate.id === debateId);
+            if (matchingDebate) {
+              setIsCompleted(matchingDebate.isCompleted === true);
+              console.log(`Debate ${debateId} encontrado en debates guardados. Estado completado:`, 
+                matchingDebate.isCompleted);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error al verificar el estado del debate:', error);
+      }
+    }
+    
+    setIsLoading(false);
+  }, [searchParams, debateId]);
   
   // El learningId es el sourceDocumentId para navegar de vuelta al learning
   const sourceDocumentId = learningId;
@@ -82,11 +121,25 @@ export default function DebatePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <DebateWorkflow 
-              documentId={debateId} 
-              learningId={learningId || ''}
-              onStepChange={setCurrentStep}
-            />
+            {isCompleted ? (
+              // Si el debate está completo, mostrar directamente el resumen
+              <div className="w-full max-w-2xl mx-auto">
+                <DebateWorkflow 
+                  documentId={debateId} 
+                  learningId={learningId || ''}
+                  onStepChange={setCurrentStep}
+                  // Forzar a mostrar el resumen
+                  initialShowSummary={true}
+                />
+              </div>
+            ) : (
+              // Si el debate no está completo, mostrar el flujo normal
+              <DebateWorkflow 
+                documentId={debateId} 
+                learningId={learningId || ''}
+                onStepChange={setCurrentStep}
+              />
+            )}
           </motion.div>
         )}
       </motion.div>
