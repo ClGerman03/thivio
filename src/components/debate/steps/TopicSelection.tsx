@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type TopicSelectionProps = {
@@ -20,15 +20,17 @@ export default function TopicSelection({
 }: TopicSelectionProps) {
   const [newTopic, setNewTopic] = useState('');
   
-  // Si no hay temas, inicializar con el tema de ejemplo
+  // Ref para controlar si ya se ha realizado la inicialización
+  const hasInitialized = useRef(false);
+  
+  // Inicializar con tema de ejemplo solo en el primer montaje cuando no hay temas
   useEffect(() => {
-    // Solo inicializamos con el tema de ejemplo en la primera carga
-    // Usamos una referencia para evitar que se ejecute en cada renderizado
-    const isFirstRender = topics.length === 0;
-    if (isFirstRender) {
+    // Solo inicializamos si no se ha hecho antes y no hay temas
+    if (!hasInitialized.current && topics.length === 0) {
       onTopicsChange([EXAMPLE_TOPIC]);
+      hasInitialized.current = true;
     }
-  }, [topics.length, onTopicsChange]); // Añadimos las dependencias faltantes
+  }, [onTopicsChange, topics.length]); // Incluimos las dependencias necesarias
   
   const handleAddTopic = () => {
     if (newTopic.trim() === '') return;

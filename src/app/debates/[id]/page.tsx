@@ -5,6 +5,8 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { DebateWorkflow, StepInfo } from '@/components/debate';
+import { loadDebateConfig } from '@/services/debateService';
+import { DebateState } from '@/hooks/useDebateWorkflow';
 import { STORAGE_KEYS } from '@/services/storageService';
 
 // Interfaz para debates guardados
@@ -25,7 +27,8 @@ export default function DebatePage() {
   const [learningId, setLearningId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<StepInfo | null>(null);
-  const [isCompleted, setIsCompleted] = useState(false);
+  // Estado inicial del debate (se actualizará al cargar)
+  const [debateState, setDebateState] = useState<DebateState | null>(null);
   
   // Capturar el learningId de los parámetros de consulta y verificar si el debate está completado
   useEffect(() => {
@@ -34,31 +37,46 @@ export default function DebatePage() {
       setLearningId(learningIdParam);
     }
     
-    // Verificar si es un debate completado
+    // Determinar el estado del debate
     if (debateId) {
-      // Intentar cargarlo desde localStorage usando la clave correcta
-      const debateKey = `${STORAGE_KEYS.DEBATE_CONFIG}_${debateId}`;
-      try {
-        const savedDebateStr = localStorage.getItem(debateKey);
-        if (savedDebateStr) {
-          const savedDebate = JSON.parse(savedDebateStr);
-          setIsCompleted(savedDebate.isCompleted === true);
-          console.log(`Debate ${debateId} cargado. Estado completado:`, savedDebate.isCompleted);
+      // Cargar configuración del debate directamente usando la función de servicio
+      const savedConfig = loadDebateConfig(debateId);
+      
+      if (savedConfig && savedConfig.id === debateId) {
+        // Determinar el estado basado en la configuración
+        if (savedConfig.isCompleted) {
+          setDebateState(DebateState.COMPLETED);
+          console.log(`Debate ${debateId} cargado. Estado: COMPLETED`);
+        } else if (savedConfig.debateName && savedConfig.topics && savedConfig.topics.length > 0 && 
+                 savedConfig.opponent && savedConfig.debateFormat) {
+          // Si tiene toda la configuración básica completada pero no está marcado como completado,
+          // probablemente esté en sesión
+          setDebateState(DebateState.SESSION);
+          console.log(`Debate ${debateId} cargado. Estado: SESSION`);
         } else {
-          // También verificar en los debates guardados completados
-          const savedDebatesStr = localStorage.getItem(STORAGE_KEYS.SAVED_DEBATES);
-          if (savedDebatesStr) {
-            const savedDebates = JSON.parse(savedDebatesStr) as SavedDebate[];
-            const matchingDebate = savedDebates.find((debate: SavedDebate) => debate.id === debateId);
-            if (matchingDebate) {
-              setIsCompleted(matchingDebate.isCompleted === true);
-              console.log(`Debate ${debateId} encontrado en debates guardados. Estado completado:`, 
-                matchingDebate.isCompleted);
-            }
+          // Si falta alguna configuración básica, probablemente esté en configuración
+          setDebateState(DebateState.CONFIGURATION);
+          console.log(`Debate ${debateId} cargado. Estado: CONFIGURATION`);
+        }
+      } else {
+        // Si no hay configuración, está en fase inicial
+        setDebateState(DebateState.CONFIGURATION);
+        console.log(`Nuevo debate ${debateId} creado. Estado: CONFIGURATION`);
+      }
+      
+      // Verificar también en debates guardados completados por compatibilidad
+      try {
+        const savedDebatesStr = localStorage.getItem(STORAGE_KEYS.SAVED_DEBATES);
+        if (savedDebatesStr) {
+          const savedDebates = JSON.parse(savedDebatesStr) as SavedDebate[];
+          const matchingDebate = savedDebates.find((debate: SavedDebate) => debate.id === debateId);
+          if (matchingDebate && matchingDebate.isCompleted) {
+            setDebateState(DebateState.COMPLETED);
+            console.log(`Debate ${debateId} encontrado en debates guardados. Estado: COMPLETED`);
           }
         }
       } catch (error) {
-        console.error('Error al verificar el estado del debate:', error);
+        console.error('Error al verificar el estado del debate en saved debates:', error);
       }
     }
     
@@ -121,25 +139,16 @@ export default function DebatePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            {isCompleted ? (
-              // Si el debate está completo, mostrar directamente el resumen
-              <div className="w-full max-w-2xl mx-auto">
-                <DebateWorkflow 
-                  documentId={debateId} 
-                  learningId={learningId || ''}
-                  onStepChange={setCurrentStep}
-                  // Forzar a mostrar el resumen
-                  initialShowSummary={true}
-                />
-              </div>
-            ) : (
-              // Si el debate no está completo, mostrar el flujo normal
+            <div className="w-full max-w-2xl mx-auto">
               <DebateWorkflow 
                 documentId={debateId} 
                 learningId={learningId || ''}
                 onStepChange={setCurrentStep}
+                // Configurar el estado inicial según corresponda
+                initialShowSummary={debateState === DebateState.COMPLETED}
+                initialState={debateState || undefined}
               />
-            )}
+            </div>
           </motion.div>
         )}
       </motion.div>

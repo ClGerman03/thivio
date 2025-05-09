@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useDebateWorkflow, StepInfo } from '@/hooks/useDebateWorkflow';
+import { useDebateWorkflow, StepInfo, DebateState } from '@/hooks/useDebateWorkflow';
 import DebateConfigSteps from '@/components/debate/configuration/DebateConfigSteps';
 import DebateSession from '@/components/debate/session/DebateSession';
 import { DebateSummary } from '@/components/debate/summary';
@@ -15,15 +15,17 @@ type DebateWorkflowProps = {
   learningId: string; // ID del learning relacionado
   onStepChange?: (stepInfo: StepInfo) => void;
   initialShowSummary?: boolean; // Permite iniciar directamente en el resumen
+  initialState?: DebateState; // Estado inicial del debate (CONFIGURATION, SESSION, COMPLETED)
 };
 
-export default function DebateWorkflow({ documentId, learningId, onStepChange, initialShowSummary = false }: DebateWorkflowProps) {
+export default function DebateWorkflow({ documentId, learningId, onStepChange, initialShowSummary = false, initialState }: DebateWorkflowProps) {
   // Usar el hook personalizado para manejar toda la lógica del workflow
   const [{
     currentStepIndex,
     debateConfig,
     debateStarted,
     showSummary
+    // debateState omitido por no usarse
   }, {
     goToNextStep,
     goToPreviousStep,
@@ -31,12 +33,14 @@ export default function DebateWorkflow({ documentId, learningId, onStepChange, i
     handleSubmit,
     handleDebateEnd,
     handleSummaryFinish,
-    validateStep
+    validateStep,
+    goToConfigMode // Nueva acción para volver al modo de configuración
   }] = useDebateWorkflow({ 
     documentId, 
     learningId, 
     onStepChange, 
-    initialShowSummary 
+    initialShowSummary,
+    initialState
   });
 
   return (
@@ -70,6 +74,7 @@ export default function DebateWorkflow({ documentId, learningId, onStepChange, i
                 <DebateSession 
                   debateConfig={generateDebateSessionData(debateConfig)}
                   onDebateEnd={handleDebateEnd}
+                  onConfigClick={goToConfigMode} // Usar la función del hook
                 />
               </motion.div>
             ) : (

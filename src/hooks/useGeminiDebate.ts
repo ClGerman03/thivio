@@ -75,20 +75,79 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
 
   /**
    * Genera el input para Gemini basado en el estado actual del debate
+   * Opcionalmente, se puede incluir un mensaje de usuario adicional que aún no esté en el historial
    */
-  const generateGeminiInput = useCallback((
+  // Definir un tipo para la estructura de turnos
+  type TurnStructure = {
+    turnType: string;
+    turnIndex: number;
+  };
+
+  // Definir el tipo de retorno de generateGeminiInput para evitar 'any'
+  type GeminiInputType = {
+    debateConfig: {
+      id: string;
+      format: string;
+      turnStructure: TurnStructure[];
+      totalTurns: number;
+      currentTurnIndex: number;
+      currentTurnType: string;
+    };
+    topic: {
+      name: string;
+      userPosition: string;
+    };
+    opponent: {
+      id: string;
+      name: string;
+    };
+    context: {
+      documents: unknown[];
+      files: unknown[];
+    };
+    history: {
+      speaker: 'user' | 'opponent';
+      content: string;
+      topic: string;
+      turnType: string;
+    }[];
+  };
+
+  const generateGeminiInput = useCallback<(
     currentTopic: string,
     currentTurnType: string,
-    currentTurnIndex: number
+    currentTurnIndex: number,
+    additionalUserMessage?: DebateMessage
+  ) => GeminiInputType>((
+    currentTopic: string,
+    currentTurnType: string,
+    currentTurnIndex: number,
+    additionalUserMessage?: DebateMessage
   ) => {
     // Filtrar historial para mostrar solo mensajes del tópico actual
-    const topicHistory = history.filter(msg => msg.topic === currentTopic);
+    let topicHistory = history.filter(msg => msg.topic === currentTopic);
+    
+    // Si hay un mensaje adicional que aún no está en el historial, agregarlo
+    if (additionalUserMessage && additionalUserMessage.topic === currentTopic) {
+      topicHistory = [...topicHistory, additionalUserMessage];
+    }
     
     return {
       debateConfig: {
         id: debateConfig.id || `debate-${Date.now()}`,
         format: debateConfig.debateFormat,
-        turnStructure: getTurnsByCount(debateConfig.turnCount),
+        // Aseguramos que turnStructure tenga el formato correcto
+        turnStructure: (getTurnsByCount(debateConfig.turnCount) || []).map(turn => {
+          // Si ya es un objeto con la estructura correcta, lo devolvemos tal cual
+          if (typeof turn === 'object' && turn !== null && 'turnType' in turn && 'turnIndex' in turn) {
+            return turn as TurnStructure;
+          }
+          // Si es un string u otro tipo, lo convertimos al formato esperado
+          return {
+            turnType: String(turn),
+            turnIndex: currentTurnIndex
+          };
+        }),
         totalTurns: debateConfig.turnCount,
         currentTurnIndex: currentTurnIndex,
         currentTurnType: currentTurnType
@@ -102,8 +161,8 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
         name: getOpponentName(debateConfig.opponent)
       },
       context: {
-        documents: [], // Se puede implementar después para incluir contenido de learning
-        files: []
+        documents: [] as unknown[], // Se puede implementar después para incluir contenido de learning
+        files: [] as unknown[]
       },
       history: topicHistory.map(msg => ({
         speaker: msg.speaker,
@@ -127,7 +186,7 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
     setError(null);
     
     try {
-      // Primero agregar el mensaje del usuario al historial
+      // Crear el mensaje del usuario
       const userMsg: DebateMessage = {
         id: generateMessageId(),
         speaker: 'user',
@@ -137,14 +196,17 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
         timestamp: Date.now()
       };
       
-      setHistory(prev => [...prev, userMsg]);
-      
-      // Preparar input para Gemini
+      // Preparar input para Gemini incluyendo el mensaje del usuario actual
+      // incluso antes de actualizar el estado (history) para evitar problemas de timing
       const geminiInput = generateGeminiInput(
         currentTopic,
         currentTurnType,
-        currentTurnIndex
+        currentTurnIndex,
+        userMsg
       );
+      
+      // Actualizar el historial con el mensaje del usuario
+      setHistory(prev => [...prev, userMsg]);
       
       console.log('Input para Gemini:', geminiInput);
       
@@ -170,8 +232,11 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
       setHistory(prev => [...prev, aiMsg]);
       
       return response;
-    } catch (err: any) {
-      const errorMessage = `Error al generar respuesta: ${err.message}`;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error
+        ? `Error al generar respuesta: ${error.message}`
+        : 'Error desconocido al generar respuesta';
+      
       console.error(errorMessage);
       setError(errorMessage);
       return '';

@@ -32,6 +32,11 @@ interface DebateControlsAreaProps {
    * Function to end the debate
    */
   onDebateEnd: () => void;
+
+  /**
+   * Function to go back to configuration mode
+   */
+  onConfigClick?: () => void;
 }
 
 /**
@@ -42,7 +47,8 @@ export default function DebateControlsArea({
   onTopicSelect,
   turnCount,
   onGenerateSummary,
-  onDebateEnd
+  onDebateEnd,
+  onConfigClick
 }: DebateControlsAreaProps) {
   // Estado para controlar si el menú de controles está desplegado
   const [isControlsOpen, setIsControlsOpen] = useState<boolean>(false);
@@ -94,6 +100,22 @@ export default function DebateControlsArea({
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </motion.button>
+        
+        {/* Configuration button */}
+        {onConfigClick && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onConfigClick}
+            className="px-4 py-1.5 text-xs text-gray-500/80 dark:text-gray-400/90 border border-gray-200/40 dark:border-gray-700/40 rounded-full hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors flex items-center gap-1"
+            aria-label="Go to configuration"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20V10m0 0l-4 4m4-4l4 4M4 4h16"/>
+            </svg>
+            <span>Config</span>
+          </motion.button>
+        )}
         
         {/* End debate button */}
         <motion.button

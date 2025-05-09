@@ -61,6 +61,16 @@ interface SpeakerVisualizationProps {
    * Last AI response content
    */
   aiResponseContent?: string;
+  
+  /**
+   * Input mode for user (voice or text)
+   */
+  userInputMode?: 'voice' | 'text';
+  
+  /**
+   * Function to toggle user input mode
+   */
+  onToggleInputMode?: () => void;
 }
 
 /**
@@ -78,87 +88,126 @@ export default function SpeakerVisualization({
   userMessage = '',
   setUserMessage = () => {},
   onSendMessage = () => {},
-  aiResponseContent = ''
+  aiResponseContent = '',
+  userInputMode = 'text',
+  onToggleInputMode = () => {}
 }: SpeakerVisualizationProps) {
   return (
     <div className="w-full flex justify-center mb-8">
       <AnimatePresence mode="wait">
-        {textMode ? (
-          // Modo texto para pruebas con Gemini
-          <>
-            {activeSpeaker === 'ai' && (
-              <motion.div 
-                key="ai-text-visualizer"
-                className="w-full"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <AIResponseVisualizer 
-                  isActive={true} 
-                  isThinking={isAIThinking} 
-                  content={aiResponseContent}
-                  opponentName={opponentName} 
-                />
-              </motion.div>
+        {activeSpeaker === 'ai' && (
+          <motion.div 
+            key="ai-visualizer"
+            className="w-full"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {textMode ? (
+              <AIResponseVisualizer 
+                isActive={true} 
+                isThinking={isAIThinking} 
+                content={aiResponseContent}
+                opponentName={opponentName} 
+              />
+            ) : (
+              <AIVisualizer 
+                isActive={isAISpeaking} 
+                isThinking={isAIThinking} 
+                opponentName={opponentName} 
+              />
             )}
-            
-            {activeSpeaker === 'user' && (
-              <motion.div 
-                key="user-text-visualizer"
-                className="w-full"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <TextInputVisualizer 
-                  isActive={true} 
-                  value={userMessage}
-                  onChange={setUserMessage}
-                  onSend={onSendMessage}
-                  isAIGenerating={isAIThinking}
-                />
-              </motion.div>
-            )}
-          </>
-        ) : (
-          // Modo original con visualizadores de voz
-          <>
-            {activeSpeaker === 'ai' && (
-              <motion.div 
-                key="ai-visualizer"
-                className="w-full"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <AIVisualizer 
-                  isActive={isAISpeaking} 
-                  isThinking={isAIThinking} 
-                  opponentName={opponentName} 
-                />
-              </motion.div>
-            )}
-            
-            {activeSpeaker === 'user' && (
-              <motion.div 
-                key="user-visualizer"
-                className="w-full"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <UserVisualizer 
-                  isActive={isRecording} 
-                  onActivate={onToggleMicrophone} 
-                />
-              </motion.div>
-            )}
-          </>
+          </motion.div>
+        )}
+        
+        {activeSpeaker === 'user' && (
+          <motion.div 
+            key="user-visualizer"
+            className="w-full"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="max-w-xl mx-auto w-full">
+              {/* Input mode selector */}
+              <div className="flex justify-center mb-4">
+                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg shadow-sm">
+                  <button
+                    onClick={onToggleInputMode}
+                    className={`px-4 py-1.5 rounded text-xs font-medium transition-all ${userInputMode === 'text' 
+                      ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow-sm' 
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                      </svg>
+                      Text
+                    </span>
+                  </button>
+                  
+                  <button
+                    onClick={onToggleInputMode}
+                    className={`px-4 py-1.5 rounded text-xs font-medium transition-all ${userInputMode === 'voice' 
+                      ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow-sm' 
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <path d="M12 19v4"></path>
+                        <path d="M8 23h8"></path>
+                      </svg>
+                      Voice
+                    </span>
+                  </button>
+                </div>
+              </div>
+              
+              <AnimatePresence mode="wait">
+                {userInputMode === 'text' ? (
+                  <motion.div
+                    key="text-input"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="w-full"
+                  >
+                    <TextInputVisualizer 
+                      isActive={true} 
+                      value={userMessage}
+                      onChange={setUserMessage}
+                      onSend={onSendMessage}
+                      isAIGenerating={isAIThinking}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="voice-input"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="w-full"
+                  >
+                    <UserVisualizer 
+                      isActive={isRecording} 
+                      onActivate={onToggleMicrophone} 
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

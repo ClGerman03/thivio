@@ -21,7 +21,7 @@ export default function OpponentSelection({
   onSelectOpponent,
 }: OpponentSelectionProps) {
   // Estado para controlar la categoría de oponente seleccionada
-  const [category, setCategory] = useState<'philosophers' | 'regular'>('regular');
+  const [category, setCategory] = useState<'philosophers' | 'styles'>('styles');
   
   // Usamos useMemo para evitar recrear los arrays en cada renderizado
   const philosopherOpponents = useMemo<Opponent[]>(() => [
@@ -60,37 +60,37 @@ export default function OpponentSelection({
     }
   ], []);
   
-  const regularOpponents = useMemo<Opponent[]>(() => [
+  const styleOpponents = useMemo<Opponent[]>(() => [
     {
-      id: 'emily',
-      name: 'Emily Carter',
-      description: 'A driven data scientist who backs every argument with statistics and real-world case studies.',
+      id: 'analytical',
+      name: 'Analytical Style',
+      description: 'A methodical approach that deconstructs arguments with logic and empirical evidence.',
       strengths: [
         'Evidence-based reasoning',
-        'Pattern recognition',
-        'Clear communication'
+        'Structured analysis',
+        'Precise communication'
       ],
       debateStyle: 'Combines analytical precision with practical examples from diverse fields'
     },
     {
-      id: 'marcus',
-      name: 'Marcus Chen',
-      description: 'A creative journalist with a talent for seeing connections between seemingly unrelated concepts.',
+      id: 'creative',
+      name: 'Creative Style',
+      description: 'An innovative approach that connects concepts in unique ways and presents information through compelling narratives.',
       strengths: [
         'Lateral thinking',
         'Engaging storytelling',
-        'Empathetic perspective'
+        'Novel perspectives'
       ],
       debateStyle: 'Uses narratives and analogies to illuminate complex ideas in accessible ways'
     },
     {
-      id: 'sophia',
-      name: 'Sophia Martinez',
-      description: 'A pragmatic entrepreneur who challenges ideas based on their practical implementation and real-world impact.',
+      id: 'pragmatic',
+      name: 'Pragmatic Style',
+      description: 'A practical approach focused on real-world implications and actionable solutions.',
       strengths: [
         'Solution-oriented thinking',
-        'Risk assessment',
-        'Strategic planning'
+        'Practical assessment',
+        'Result-focused arguments'
       ],
       debateStyle: 'Focuses on actionable insights and testing ideas through practical application'
     }
@@ -102,44 +102,46 @@ export default function OpponentSelection({
     if (!selectedOpponent) {
       const defaultOpponent = category === 'philosophers' 
         ? philosopherOpponents[0].id 
-        : regularOpponents[0].id;
+        : styleOpponents[0].id;
       onSelectOpponent(defaultOpponent);
     } else {
       // Verificar si el oponente seleccionado pertenece a la categoría activa
       const opponentExists = (
         category === 'philosophers' 
           ? philosopherOpponents 
-          : regularOpponents
+          : styleOpponents
       ).some(opp => opp.id === selectedOpponent);
       
       // Si el oponente no existe en la categoría actual, seleccionar el primero
       if (!opponentExists) {
-        const defaultOpponent = category === 'philosophers' 
-          ? philosopherOpponents[0].id 
-          : regularOpponents[0].id;
-        onSelectOpponent(defaultOpponent);
+        const newOpponent = category === 'philosophers'
+          ? philosopherOpponents[0].id
+          : styleOpponents[0].id;
+        onSelectOpponent(newOpponent);
       }
     }
-  }, [category, selectedOpponent, onSelectOpponent, philosopherOpponents, regularOpponents]);
+  }, [category, selectedOpponent, onSelectOpponent, philosopherOpponents, styleOpponents]);
 
-  // Seleccionar la lista de oponentes basada en la categoría actual
-  const opponents = category === 'philosophers' ? philosopherOpponents : regularOpponents;
+  // Determinar los oponentes actuales basados en la categoría seleccionada
+  const opponents = category === 'philosophers' ? philosopherOpponents : styleOpponents;
   
-  // Encontrar el oponente seleccionado actualmente
-  const currentOpponent = opponents.find(opp => opp.id === selectedOpponent);
+  // Encontrar el oponente seleccionado actual para mostrar sus detalles
+  const currentOpponent = useMemo(() => {
+    return [...philosopherOpponents, ...styleOpponents].find(opp => opp.id === selectedOpponent);
+  }, [selectedOpponent, philosopherOpponents, styleOpponents]);
 
   return (
     <div className="w-full max-w-xl py-4">
       {/* Selector de categoría de oponentes */}
-      <div className="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-6">
+      <div className="flex rounded-md bg-white dark:bg-gray-900 p-[1px] mb-6">
         <button
-          onClick={() => setCategory('regular')}
-          className={`flex-1 text-[11px] py-2 px-3 transition-colors ${category === 'regular'
+          onClick={() => setCategory('styles')}
+          className={`flex-1 text-[11px] py-2 px-3 transition-colors ${category === 'styles'
             ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium'
             : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
           }`}
         >
-          Contemporary Debaters
+          Debate Styles
         </button>
         <button
           onClick={() => setCategory('philosophers')}

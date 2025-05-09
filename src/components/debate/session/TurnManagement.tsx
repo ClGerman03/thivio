@@ -8,23 +8,26 @@ import TurnConfirmationPopup from './interventions/TurnConfirmationPopup';
 type TurnManagementProps = {
   activeSpeaker: string | null;
   onChangeTurn: (speaker: string) => void;
-  hasRecordedContent: boolean;
-  onSend: (content: string) => void;
-  onDiscard: () => void;
+  // Las siguientes propiedades ya no se utilizan en el componente actual
+  // pero se mantienen comentadas para referencia futura
+  // hasRecordedContent: boolean;
+  // onSend: (content: string) => void;
+  // onDiscard: () => void;
+  // userMessage?: string;
+  // setUserMessage?: (message: string) => void;
   isAIGenerating?: boolean;
-  userMessage?: string;
-  setUserMessage?: (message: string) => void;
 };
 
 export default function TurnManagement({ 
   activeSpeaker,
   onChangeTurn,
-  hasRecordedContent,
-  onSend,
-  onDiscard,
-  isAIGenerating = false,
-  userMessage = '',
-  setUserMessage = () => {}
+  // Propiedades no utilizadas eliminadas de la destructuración
+  // hasRecordedContent,
+  // onSend,
+  // onDiscard,
+  // userMessage = '',
+  // setUserMessage = () => {},
+  isAIGenerating = false
 }: TurnManagementProps) {
   // Acceder al contexto para obtener información sobre el turno actual
   const { currentTurnName, opponentName } = useDebateContext();
@@ -43,62 +46,10 @@ export default function TurnManagement({
     }
   }, [activeSpeaker]);
   
-  // Si es el turno del usuario, mostrar el área de entrada de texto
+  // Si es el turno del usuario, no mostramos nada en este componente
+  // ya que la entrada de texto se maneja en SpeakerVisualization -> TextInputVisualizer
   if (activeSpeaker === 'user') {
-    return (
-      <div className="flex flex-col w-full max-w-xl gap-3">
-        {/* Campo de texto para el mensaje del usuario */}
-        <textarea
-          ref={textareaRef}
-          className="w-full p-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 
-                   bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 
-                   focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600"
-          placeholder="Escribe tu argumento aquí..."
-          rows={3}
-          value={userMessage}
-          onChange={(e) => setUserMessage(e.target.value)}
-          disabled={isAIGenerating}
-        />
-        
-        <div className="flex items-center gap-3 self-end">
-          {/* Botón de descartar */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-3 py-1.5 rounded-md text-xs border border-gray-200 dark:border-gray-700 
-                      text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/70 
-                      focus:outline-none"
-            onClick={onDiscard}
-            disabled={isAIGenerating}
-            aria-label="Descartar"
-          >
-            Descartar
-          </motion.button>
-          
-          {/* Botón de enviar */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`px-4 py-1.5 rounded-md text-xs 
-                        text-white bg-gray-700 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 
-                        focus:outline-none disabled:opacity-50 disabled:pointer-events-none 
-                        flex items-center gap-2`}
-            onClick={() => onSend(userMessage)}
-            disabled={!userMessage.trim() || isAIGenerating}
-            aria-label="Enviar mensaje"
-          >
-            {isAIGenerating ? (
-              <>
-                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Procesando...</span>
-              </>
-            ) : (
-              <>Enviar</>  
-            )}
-          </motion.button>
-        </div>
-      </div>
-    );
+    return null;
   }
   
   // Función para manejar el cambio de turno

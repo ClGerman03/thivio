@@ -26,11 +26,20 @@ export type StepInfo = {
   description: string;
 };
 
+// Estados posibles del debate
+export enum DebateState {
+  CONFIGURATION = 'configuration', // Fase de configuración inicial
+  SESSION = 'session',            // Debate en curso
+  COMPLETED = 'completed'         // Debate completado (resumen)
+}
+
 export type DebateWorkflowState = {
   currentStepIndex: number;
   debateConfig: DebateConfig;
   debateStarted: boolean;
   showSummary: boolean;
+  // Estado actual del debate (calculado automáticamente)
+  debateState: DebateState;
 };
 
 export type DebateWorkflowActions = {
@@ -41,6 +50,7 @@ export type DebateWorkflowActions = {
   handleDebateEnd: () => void;
   handleSummaryFinish: () => void;
   validateStep: () => boolean;
+  goToConfigMode: () => void; // Nueva acción para volver al modo de configuración
 };
 
 type UseDebateWorkflowProps = {
@@ -48,6 +58,7 @@ type UseDebateWorkflowProps = {
   learningId: string;
   onStepChange?: (stepInfo: StepInfo) => void;
   initialShowSummary?: boolean; // Permite iniciar directamente en el resumen
+  initialState?: DebateState; // Estado inicial del debate (CONFIGURATION, SESSION, COMPLETED)
 };
 
 // Definición de los pasos y su información
@@ -80,7 +91,8 @@ export function useDebateWorkflow({
   documentId, 
   learningId, 
   onStepChange,
-  initialShowSummary = false
+  initialShowSummary = false,
+  initialState
 }: UseDebateWorkflowProps): [DebateWorkflowState, DebateWorkflowActions] {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   
@@ -113,12 +125,38 @@ export function useDebateWorkflow({
     };
   });
   
-  // Determinar si el debate ya ha sido iniciado o está completado
+  // Determinar el estado inicial basado en initialState o propiedades de debateConfig
   const isCompletedDebate = debateConfig.isCompleted === true;
-  // Si initialShowSummary es true o el debate está completado, iniciamos en el resumen
-  const shouldShowSummary = initialShowSummary || isCompletedDebate;
-  const [debateStarted, setDebateStarted] = useState(shouldShowSummary);
-  const [showSummary, setShowSummary] = useState(shouldShowSummary);
+  
+  // Aplicar el estado inicial si se proporciona
+  let initialDebateStarted = false;
+  let initialShowSummaryState = false;
+  
+  if (initialState) {
+    // Aplicar configuración según el estado inicial proporcionado
+    switch (initialState) {
+      case DebateState.CONFIGURATION:
+        initialDebateStarted = false;
+        initialShowSummaryState = false;
+        break;
+      case DebateState.SESSION:
+        initialDebateStarted = true;
+        initialShowSummaryState = false;
+        break;
+      case DebateState.COMPLETED:
+        initialDebateStarted = true;
+        initialShowSummaryState = true;
+        break;
+    }
+  } else {
+    // Comportamiento anterior si no se proporciona initialState
+    // Si initialShowSummary es true o el debate está completado, iniciamos en el resumen
+    initialDebateStarted = initialShowSummary || isCompletedDebate;
+    initialShowSummaryState = initialShowSummary || isCompletedDebate;
+  }
+  
+  const [debateStarted, setDebateStarted] = useState(initialDebateStarted);
+  const [showSummary, setShowSummary] = useState(initialShowSummaryState);
 
   // Notificar cambio de paso
   useEffect(() => {
@@ -216,10 +254,16 @@ export function useDebateWorkflow({
     }
   }, [debateConfig, documentId, learningId, onStepChange]);
 
-  // Finalizar el debate y mostrar resumen
+  // Finalizar el debate, marcarlo como completado y mostrar resumen
   const handleDebateEnd = useCallback(() => {
+    // Marcar el debate como completado
+    const updatedConfig = { ...debateConfig, isCompleted: true };
+    setDebateConfig(updatedConfig);
+    saveDebateConfig(updatedConfig);
+    
+    // Mostrar la pantalla de resumen
     setShowSummary(true);
-  }, []);
+  }, [debateConfig]);
 
   // Finalizar el resumen y resetear
   const handleSummaryFinish = useCallback(() => {
@@ -269,13 +313,32 @@ export function useDebateWorkflow({
     }
   }, [currentStepIndex, debateConfig]);
 
+  // Calcular el estado actual del debate basado en las variables existentes
+  const getDebateState = (): DebateState => {
+    if (!debateStarted) {
+      return DebateState.CONFIGURATION;
+    } else if (showSummary || debateConfig.isCompleted) {
+      return DebateState.COMPLETED;
+    } else {
+      return DebateState.SESSION;
+    }
+  };
+
   // Estado actual
   const state: DebateWorkflowState = {
     currentStepIndex,
     debateConfig,
     debateStarted,
-    showSummary
+    showSummary,
+    debateState: getDebateState()
   };
+
+  // Función para volver al modo de configuración
+  const goToConfigMode = useCallback(() => {
+    // Volver al modo de configuración manteniendo los datos actuales
+    setDebateStarted(false);
+    setShowSummary(false);
+  }, []);
 
   // Acciones disponibles
   const actions: DebateWorkflowActions = {
@@ -285,7 +348,8 @@ export function useDebateWorkflow({
     handleSubmit,
     handleDebateEnd,
     handleSummaryFinish,
-    validateStep
+    validateStep,
+    goToConfigMode
   };
 
   return [state, actions];

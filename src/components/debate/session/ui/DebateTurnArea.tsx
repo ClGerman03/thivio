@@ -52,26 +52,31 @@ interface DebateTurnAreaProps {
 export default function DebateTurnArea({
   activeSpeaker,
   onChangeTurn,
-  hasRecordedContent,
-  onSend,
-  onDiscard,
+  // Propiedades que ya no usamos pero mantenemos en la interfaz para compatibilidad
+  // hasRecordedContent,
+  // onSend,
+  // onDiscard,
   isAIGenerating = false,
-  userMessage = '',
-  setUserMessage = () => {}
+  // userMessage = '',
+  // setUserMessage = () => {}
 }: DebateTurnAreaProps) {
   return (
     <div className="w-full flex justify-center my-4">
       <div className="flex items-center justify-center">
+        {/* Solo pasamos las propiedades que ahora acepta TurnManagement */}
         <TurnManagement 
           activeSpeaker={activeSpeaker}
           onChangeTurn={onChangeTurn}
-          hasRecordedContent={hasRecordedContent}
-          onSend={onSend}
-          onDiscard={onDiscard}
           isAIGenerating={isAIGenerating}
-          userMessage={userMessage}
-          setUserMessage={setUserMessage}
         />
+        
+        {/* Nota: Las siguientes propiedades ya no se utilizan en TurnManagement:
+          - hasRecordedContent
+          - onSend
+          - onDiscard
+          - userMessage
+          - setUserMessage
+        */}
       </div>
     </div>
   );

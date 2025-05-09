@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import InterventionPopup from './interventions/InterventionPopup';
-import TurnConfirmationPopup from './interventions/TurnConfirmationPopup';
+import { useState, useCallback } from 'react';
+// Importaciones de popups eliminadas temporalmente
 import { DebateProvider } from '@/context/DebateContext';
 import { useDebateState } from '@/hooks/useDebateState';
 import { useDebateInterventions } from '@/hooks/useDebateInterventions';
@@ -30,14 +29,23 @@ type DebateSessionProps = {
     positions: Record<string, string>;
   };
   onDebateEnd: () => void;
+  onConfigClick?: () => void; // Nueva función para volver a la configuración
 };
 
-export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessionProps) {
+export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick }: DebateSessionProps) {
   // Use our custom hooks to manage state and logic
   const debateState = useDebateState(debateConfig);
   
-  // Estado para el texto del usuario
-  const [userMessage, setUserMessage] = useState('');
+  // Estado del mensaje del usuario actual (modo texto)
+  const [userMessage, setUserMessage] = useState<string>('');
+  
+  // Estado para controlar el modo de entrada del usuario (texto o voz)
+  const [userInputMode, setUserInputMode] = useState<'text' | 'voice'>('text');
+  
+  // Función para alternar entre modos de entrada
+  const toggleInputMode = useCallback(() => {
+    setUserInputMode(prev => prev === 'text' ? 'voice' : 'text');
+  }, []);
   
   // Extract state for easier access in this component
   const {
@@ -63,19 +71,19 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
   const {
     history,
     isGenerating,
-    error: geminiError,
-    getAIResponse,
-    clearHistory
+    // error: geminiError, // No utilizado
+    getAIResponse
+    // clearHistory      // No utilizado
   } = useGeminiDebate(debateConfig);
   
   // Interventions and messaging (mantenemos temporalmente para compatibilidad)
   const { 
     interventions,
-    showTurnPopup, 
-    turnPopupText, 
-    closePopup,
+    // showTurnPopup,    // No utilizado
+    // turnPopupText,    // No utilizado
+    // closePopup,       // No utilizado en el contexto actual
     discardUserIntervention,
-    sendUserIntervention: originalSendUserIntervention,
+    // sendUserIntervention: originalSendUserIntervention, // No utilizado
     setTurnPopupText,
     setShowTurnPopup
   } = useDebateInterventions(debateState, debateConfig);
@@ -83,8 +91,7 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
   // Debate summary generator
   const { generateTextSummary } = useDebateSummary(interventions, debateConfig);
   
-  // Estado para controlar el popup de confirmación de cambio de turno
-  const [showTurnConfirmation, setShowTurnConfirmation] = useState(false);
+  // Estado para controlar el cambio de turno - Popups eliminados temporalmente
 
   // Handler para enviar mensaje del usuario a Gemini
   const sendUserIntervention = useCallback(async (content: string) => {
@@ -99,10 +106,8 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
     setIsAIThinking(true);
     
     try {
-      // Mostrar popup para AI
-      closePopup();
-      setTurnPopupText(`${opponentName} está pensando sobre "${currentTopic}"...`);
-      setShowTurnPopup(true);
+      // No mostramos popups para la AI - eliminados temporalmente
+      console.log(`${opponentName} está pensando sobre "${currentTopic}"...`);
       
       console.log(`Enviando mensaje a Gemini: "${content}" sobre ${currentTopic} en turno ${currentTurnName}`);
       
@@ -119,7 +124,6 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
       // La IA comienza a "hablar"
       setIsAIThinking(false);
       setIsAISpeaking(true);
-      closePopup();
       
       // Limpiar el mensaje del usuario para el siguiente turno
       if (TEXT_MODE_ENABLED) {
@@ -135,7 +139,7 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
         setIsAISpeaking(false);
         
         if (!TEXT_MODE_ENABLED) {
-          // En modo voz, cambiar automáticamente
+          // En modo voz, cambiar automáticamente (mantenemos este comportamiento)
           handleTurnChange('user');
           nextTurn();
           
@@ -144,8 +148,9 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
           setTurnPopupText(popupText);
           setShowTurnPopup(true);
         } else {
-          // En modo texto, mostrar confirmación para cambiar de turno
-          setShowTurnConfirmation(true);
+          // En modo texto, NO cambiamos automáticamente
+          // El usuario deberá usar el botón "Tomar turno" cuando esté listo
+          console.log(`La IA ha terminado de responder. Puedes tomar el turno cuando estés listo.`);
         }
       }, speakingTime);
       
@@ -160,13 +165,13 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
         setUserMessage('');
       }
       
-      // Mostrar popup de error
-      setTurnPopupText(`Hubo un error. Por favor intenta de nuevo.`);
-      setShowTurnPopup(true);
+      // Mostrar mensaje de error en consola
+      console.error(`Hubo un error al obtener respuesta de Gemini. Por favor intenta de nuevo.`);
     }
   }, [currentTopic, currentTurnName, currentTurnIndex, getAIResponse, handleTurnChange, 
       nextTurn, opponentName, setIsAIThinking, setIsAISpeaking, setHasRecordedContent,
-      closePopup, setTurnPopupText, setShowTurnPopup]);
+      /* closePopup omitido porque no se usa dentro de esta función callback */
+      setTurnPopupText, setShowTurnPopup]);
   
   // Topic selection handler
   const handleTopicSelect = (topic: string, index: number) => {
@@ -213,6 +218,8 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
                   ? history[history.length - 1].content 
                   : ''
                 : ''}
+              userInputMode={userInputMode}
+              onToggleInputMode={toggleInputMode}
             />
             
             {/* Current topic information with rounded background */}
@@ -225,26 +232,24 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
               totalTurns={debateConfig.turnCount}
             />
             
-            {/* Turn management component - oculto en modo texto */}
-            {!TEXT_MODE_ENABLED && (
-              <DebateTurnArea
-                activeSpeaker={activeSpeaker} 
-                onChangeTurn={(speaker: string) => {
-                  // Conversión segura a 'user' | 'ai'
-                  if (speaker === 'user' || speaker === 'ai') {
-                    handleTurnChange(speaker);
-                  }
-                }}
-                hasRecordedContent={hasRecordedContent}
-                onSend={(content: string) => {
-                  void sendUserIntervention(content); // Usar void para indicar que ignoramos la Promise
-                }}
-                onDiscard={discardUserIntervention}
-                isAIGenerating={isGenerating || isAIThinking}
-                userMessage={userMessage}
-                setUserMessage={setUserMessage}
-              />
-            )}
+            {/* Turn management component - ahora visible en todos los modos */}
+            <DebateTurnArea
+              activeSpeaker={activeSpeaker} 
+              onChangeTurn={(speaker: string) => {
+                // Conversión segura a 'user' | 'ai'
+                if (speaker === 'user' || speaker === 'ai') {
+                  handleTurnChange(speaker);
+                }
+              }}
+              hasRecordedContent={hasRecordedContent}
+              onSend={(content: string) => {
+                void sendUserIntervention(content); // Usar void para indicar que ignoramos la Promise
+              }}
+              onDiscard={discardUserIntervention}
+              isAIGenerating={isGenerating || isAIThinking}
+              userMessage={userMessage}
+              setUserMessage={setUserMessage}
+            />
             
             {/* Controls for debate */}
             <DebateControlsArea
@@ -256,38 +261,13 @@ export default function DebateSession({ debateConfig, onDebateEnd }: DebateSessi
                 console.log('Finalizando debate desde DebateSession');
                 onDebateEnd();
               }}
+              onConfigClick={onConfigClick}
             />
           </div>
         </div>
       </div>
 
-      {/* Popup de intervención para cambios de turno */}
-      <InterventionPopup 
-        isVisible={showTurnPopup}
-        onClose={closePopup}
-        text={turnPopupText}
-      />
-
-      {/* Popup de confirmación para cambio de turno después de recibir respuesta de Gemini */}
-      <TurnConfirmationPopup
-        isVisible={showTurnConfirmation}
-        onConfirm={() => {
-          // Confirmar el cambio de turno
-          handleTurnChange('user');
-          nextTurn();
-          setShowTurnConfirmation(false);
-          
-          // Mostrar popup para el turno del usuario
-          const popupText = `Tu turno! Escribe sobre "${currentTopic}" - ${currentTurnName}`;
-          setTurnPopupText(popupText);
-          setShowTurnPopup(true);
-        }}
-        onCancel={() => {
-          // Cancelar el cambio de turno (simplemente cerrar el popup)
-          setShowTurnConfirmation(false);
-        }}
-        text={`¿Deseas continuar al siguiente turno? Acabas de recibir una respuesta para "${currentTopic}"`}
-      />
+      {/* Popups eliminados temporalmente */}
     </DebateProvider>
   );
 }
