@@ -22,12 +22,27 @@ interface DebateTurnAreaProps {
   /**
    * Function to send the user's recorded intervention
    */
-  onSend: () => void;
+  onSend: (content: string) => void;
   
   /**
    * Function to discard the user's recorded intervention
    */
   onDiscard: () => void;
+  
+  /**
+   * Whether the AI is generating a response
+   */
+  isAIGenerating?: boolean;
+  
+  /**
+   * Current user message being typed
+   */
+  userMessage?: string;
+  
+  /**
+   * Function to update the user message
+   */
+  setUserMessage?: (message: string) => void;
 }
 
 /**
@@ -39,7 +54,10 @@ export default function DebateTurnArea({
   onChangeTurn,
   hasRecordedContent,
   onSend,
-  onDiscard
+  onDiscard,
+  isAIGenerating = false,
+  userMessage = '',
+  setUserMessage = () => {}
 }: DebateTurnAreaProps) {
   return (
     <div className="w-full flex justify-center my-4">
@@ -50,6 +68,9 @@ export default function DebateTurnArea({
           hasRecordedContent={hasRecordedContent}
           onSend={onSend}
           onDiscard={onDiscard}
+          isAIGenerating={isAIGenerating}
+          userMessage={userMessage}
+          setUserMessage={setUserMessage}
         />
       </div>
     </div>

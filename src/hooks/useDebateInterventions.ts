@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 
-interface Intervention {
+export interface Intervention {
   speaker: 'user' | 'ai';
   position: string;
   content: string;
@@ -10,7 +10,7 @@ interface Intervention {
   turn: number;
 }
 
-interface DebateConfig {
+export interface DebateConfig {
   positions: Record<string, string>;
 }
 
@@ -136,6 +136,8 @@ export function useDebateInterventions(
     showTurnPopup,
     turnPopupText,
     closePopup,
+    setShowTurnPopup,
+    setTurnPopupText,
     
     // Action handlers
     sendUserIntervention,
