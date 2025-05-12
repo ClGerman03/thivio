@@ -62,7 +62,7 @@ type UseDebateWorkflowProps = {
 };
 
 // Definición de los pasos y su información
-export const DEBATE_STEPS = ['debateName', 'topic', 'initialPosition', 'opponent', 'debateFormat'];
+export const DEBATE_STEPS = ['debateName', 'context', 'topic', 'initialPosition', 'opponent', 'debateFormat'];
 
 export const STEP_INFO: Record<string, {title: string, description: string}> = {
   debateName: {
@@ -80,6 +80,10 @@ export const STEP_INFO: Record<string, {title: string, description: string}> = {
   opponent: {
     title: 'Select opponent',
     description: 'Choose a philosopher to debate with'
+  },
+  context: {
+    title: 'Add context',
+    description: 'Select learning content to enrich the debate'
   },
   debateFormat: {
     title: 'Select debate format',
@@ -161,8 +165,20 @@ export function useDebateWorkflow({
   // Notificar cambio de paso
   useEffect(() => {
     if (onStepChange) {
-      // Si el debate está completado, mostrar información de resumen
-      if (isCompletedDebate) {
+      if (debateStarted && !showSummary) {
+        // Cuando estamos en la fase de sesión activa
+        const debateTitle = debateConfig.debateName && debateConfig.debateName.trim()
+          ? debateConfig.debateName
+          : (debateConfig.topics && debateConfig.topics.length > 0 ? debateConfig.topics[0] : 'Debate Session');
+        
+        onStepChange({
+          index: -1, // Índice especial para la sesión activa
+          type: 'session',
+          title: debateTitle,
+          description: `${debateConfig.debateFormat} format • ${debateConfig.topics.length} topics • vs ${debateConfig.opponent}`
+        });
+      } else if (isCompletedDebate || showSummary) {
+        // Si el debate está completado, mostrar información de resumen
         const debateTitle = debateConfig.debateName && debateConfig.debateName.trim()
           ? debateConfig.debateName
           : (debateConfig.topics && debateConfig.topics.length > 0 ? debateConfig.topics[0] : 'Debate Summary');
@@ -173,19 +189,18 @@ export function useDebateWorkflow({
           title: debateTitle,
           description: `Completed debate summary • ${debateConfig.topics.length} topics • vs ${debateConfig.opponent}`
         });
-      } else {
-        const currentStepType = DEBATE_STEPS[currentStepIndex];
-        const info = STEP_INFO[currentStepType];
-        
+      } else if (!debateStarted) {
+        // Para la fase de configuración
+        const currentStep = DEBATE_STEPS[currentStepIndex];
         onStepChange({
           index: currentStepIndex,
-          type: currentStepType,
-          title: info.title,
-          description: info.description
+          type: currentStep,
+          title: STEP_INFO[currentStep].title,
+          description: STEP_INFO[currentStep].description
         });
       }
     }
-  }, [currentStepIndex, onStepChange, isCompletedDebate, debateConfig]);
+  }, [currentStepIndex, debateStarted, onStepChange, showSummary, debateConfig, isCompletedDebate]);
 
   // Navegar al siguiente paso
   const goToNextStep = useCallback(() => {
@@ -306,6 +321,10 @@ export function useDebateWorkflow({
           Object.keys(debateConfig.positions).includes(topic));
       case 'opponent':
         return debateConfig.opponent !== '';
+      case 'context':
+        // El paso de contexto siempre es válido, incluso si no se selecciona ninguno
+        // porque se puede tener un debate sin contexto adicional
+        return true;
       case 'debateFormat':
         return debateConfig.debateFormat !== '' && debateConfig.turnCount > 0;
       default:

@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { StoredFile, getFilesForLearning, getFile } from '@/services/fileStorageService';
 
 interface FileUploadSectionProps {
   selectedFiles: File[];
   existingFiles: string[];
+  learningId?: string;
   onFilesChange: (files: File[]) => void;
   onExistingFilesChange: (files: string[]) => void;
   maxFiles?: number;
@@ -13,13 +15,31 @@ interface FileUploadSectionProps {
 export default function FileUploadSection({
   selectedFiles,
   existingFiles,
+  learningId,
   onFilesChange,
   onExistingFilesChange,
   maxFiles = 5
 }: FileUploadSectionProps) {
   const [dragActive, setDragActive] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [storedFiles, setStoredFiles] = useState<Array<Omit<StoredFile, 'content'>>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Cargar los metadatos de archivos almacenados cuando cambia el learningId
+  useEffect(() => {
+    async function loadStoredFiles() {
+      if (learningId) {
+        try {
+          const files = await getFilesForLearning(learningId);
+          setStoredFiles(files);
+        } catch (error) {
+          console.error('Error loading stored files:', error);
+        }
+      }
+    }
+    
+    loadStoredFiles();
+  }, [learningId]);
   
   // File handlers
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -94,7 +114,7 @@ export default function FileUploadSection({
     onExistingFilesChange(newFiles);
   };
   
-  const formatBytes = (bytes: number, decimals = 2) => {
+    const formatBytes = (bytes: number, decimals = 2) => {
     if (bytes === 0) return '0 Bytes';
     
     const k = 1024;
@@ -106,17 +126,94 @@ export default function FileUploadSection({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
   
+  // Función para visualizar un archivo almacenado
+  const handleViewStoredFile = async (fileId: string) => {
+    try {
+      const file = await getFile(fileId);
+      if (!file) {
+        console.error('Archivo no encontrado');
+        return;
+      }
+      
+      // Crear un objeto URL para el contenido
+      let dataUrl = file.content;
+      
+      // Si el contenido no es una URL de datos, conviértelo
+      if (!dataUrl.startsWith('data:')) {
+        // Es texto plano, convertirlo a blob
+        const blob = new Blob([dataUrl], { type: 'text/plain' });
+        dataUrl = URL.createObjectURL(blob);
+      }
+      
+      // Abrir en una nueva pestaña
+      window.open(dataUrl, '_blank');
+    } catch (error) {
+      console.error('Error al abrir el archivo:', error);
+    }
+  };
+  
+  // Función para previsualizar un archivo que se está subiendo
+  const handlePreviewFile = (file: File) => {
+    try {
+      // Crear una URL temporal para el archivo
+      const objectUrl = URL.createObjectURL(file);
+      
+      // Abrir en una nueva pestaña
+      window.open(objectUrl, '_blank');
+      
+      // Limpiar la URL cuando se cierre (aunque los navegadores suelen limpiarla automáticamente)
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+    } catch (error) {
+      console.error('Error al previsualizar el archivo:', error);
+    }
+  };
+  
   return (
     <div>
       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Upload Files
       </p>
 
-      {/* Existing files */}
-      {existingFiles.length > 0 && (
+      {/* Existing files - from both legacy existingFiles and new storedFiles */}
+      {(existingFiles.length > 0 || storedFiles.length > 0) && (
         <div className="mb-3">
           <div className="space-y-2">
-            {existingFiles.map((fileName, index) => (
+            {/* Show stored files from IndexedDB */}
+            {storedFiles.map((file, index) => (
+              <div key={`stored-${file.id}`} className="p-2 bg-gray-50 dark:bg-gray-800/30 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" 
+                onClick={() => handleViewStoredFile(file.id)}
+                title="Click para visualizar el archivo"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400">
+                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    <div>
+                      <div className="text-sm text-gray-700 dark:text-gray-300">{file.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatBytes(file.size)}</div>
+                    </div>
+                  </div>
+                  {/* Botón para eliminar */}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation(); // Evitar que el click se propague al contenedor
+                      handleRemoveExistingFile(index);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Legacy files from fileNames (for compatibility) */}
+            {storedFiles.length === 0 && existingFiles.map((fileName, index) => (
               <div key={`existing-${index}`} className="p-2 bg-gray-50 dark:bg-gray-800/30 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -124,7 +221,9 @@ export default function FileUploadSection({
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
                       <polyline points="14 2 14 8 20 8"></polyline>
                     </svg>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{fileName}</span>
+                    <div>
+                      <div className="text-sm text-gray-700 dark:text-gray-300">{fileName}</div>
+                    </div>
                   </div>
                   <button 
                     onClick={() => handleRemoveExistingFile(index)}
@@ -147,7 +246,10 @@ export default function FileUploadSection({
         <div className="mb-3">
           <div className="space-y-2">
             {selectedFiles.map((file, index) => (
-              <div key={`selected-${index}`} className="p-2 bg-gray-50 dark:bg-gray-800/30 rounded-lg">
+              <div key={`selected-${index}`} className="p-2 bg-gray-50 dark:bg-gray-800/30 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => handlePreviewFile(file)}
+                title="Click para visualizar el archivo"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400">
@@ -159,8 +261,12 @@ export default function FileUploadSection({
                       <div className="text-xs text-gray-500 dark:text-gray-400">{formatBytes(file.size)}</div>
                     </div>
                   </div>
+                  {/* Botón para eliminar el archivo */}
                   <button 
-                    onClick={() => handleRemoveFile(index)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Evitar que el click se propague al contenedor
+                      handleRemoveFile(index);
+                    }}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

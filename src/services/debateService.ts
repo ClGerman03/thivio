@@ -337,5 +337,7 @@ export const generateDebateSessionData = (config: DebateConfigData) => {
     turnCount: config.turnCount,
     opponent: config.opponent,
     positions: config.positions,
+    learningId: config.learningId, // Incluir learningId para acceder al contexto
+    id: config.id // Mantener el ID del debate
   };
 };

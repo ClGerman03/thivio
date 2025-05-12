@@ -1,16 +1,18 @@
 /**
- * Learning Service for Lexiroo
- * Handles operations related to user learnings with localStorage
+ * Learning Service for Thivio
+ * Handles operations related to user learnings with localStorage and IndexedDB
  */
 
 import { setStorageItem, getStorageItem, STORAGE_KEYS } from './storageService';
+import { storeFile, deleteFilesForLearning, getFilesForLearning, StoredFile } from './fileStorageService';
 
 /**
  * Learning Content interface para representar el contenido de aprendizaje
  */
 export interface LearningContent {
-  text?: string;       // Texto ingresado por el usuario
-  fileNames?: string[]; // Nombres de archivos subidos
+  text?: string;            // Texto ingresado por el usuario
+  fileIds?: string[];      // IDs de archivos almacenados en IndexedDB
+  fileNames?: string[];    // Nombres de archivos (para compatibilidad con versiones anteriores)
 }
 
 /**
@@ -78,13 +80,20 @@ export const saveLearning = (learning: Learning): boolean => {
  * @param id Learning ID
  * @returns boolean indicating success
  */
-export const deleteLearning = (id: string): boolean => {
+export const deleteLearning = async (id: string): Promise<boolean> => {
   const learnings = getAllLearnings();
   const filteredLearnings = learnings.filter(learning => learning.id !== id);
   
   if (filteredLearnings.length === learnings.length) {
     // No learning was removed
     return false;
+  }
+  
+  // Limpiar archivos relacionados en IndexedDB
+  try {
+    await deleteFilesForLearning(id);
+  } catch (error) {
+    console.warn('Error al limpiar archivos relacionados:', error);
   }
   
   // Limpiar también datos antiguos del localStorage
@@ -186,6 +195,75 @@ export const updateLearningContent = (id: string, content: Partial<LearningConte
   saveLearning(updatedLearning);
   
   return updatedLearning;
+};
+
+/**
+ * Guarda un archivo en el almacenamiento y actualiza el learning con su referencia
+ * @param learningId ID del learning al que pertenece el archivo
+ * @param file Archivo a guardar
+ * @returns El learning actualizado con la referencia al archivo
+ */
+export const addFileToLearning = async (learningId: string, file: File): Promise<Learning | null> => {
+  try {
+    const learning = getLearningById(learningId);
+    if (!learning) return null;
+    
+    // Guardar el archivo en IndexedDB
+    const storedFile = await storeFile(file, learningId);
+    
+    // Obtener los fileIds existentes o inicializar array vacío
+    const existingFileIds = learning.content?.fileIds || [];
+    
+    // Obtener los fileNames existentes o inicializar array vacío (para compatibilidad)
+    const existingFileNames = learning.content?.fileNames || [];
+    
+    // Actualizar el contenido del learning
+    return updateLearningContent(learningId, {
+      fileIds: [...existingFileIds, storedFile.id],
+      fileNames: [...existingFileNames, storedFile.name]
+    });
+  } catch (error) {
+    console.error('Error al añadir archivo al learning:', error);
+    return null;
+  }
+};
+
+/**
+ * Agrega múltiples archivos al learning
+ * @param learningId ID del learning
+ * @param files Lista de archivos a agregar
+ * @returns El learning actualizado con las referencias a los archivos
+ */
+export const addFilesToLearning = async (learningId: string, files: File[]): Promise<Learning | null> => {
+  try {
+    let currentLearning = getLearningById(learningId);
+    if (!currentLearning) return null;
+    
+    // Procesar cada archivo secuencialmente para evitar problemas de concurrencia
+    for (const file of files) {
+      currentLearning = await addFileToLearning(learningId, file);
+      if (!currentLearning) throw new Error('Error al procesar archivos');
+    }
+    
+    return currentLearning;
+  } catch (error) {
+    console.error('Error al añadir múltiples archivos:', error);
+    return null;
+  }
+};
+
+/**
+ * Obtiene los metadatos de los archivos asociados a un learning
+ * @param learningId ID del learning
+ * @returns Promesa que resuelve a un array de metadatos de archivos
+ */
+export const getLearningFiles = async (learningId: string): Promise<Array<Omit<StoredFile, 'content'>>> => {
+  try {
+    return await getFilesForLearning(learningId);
+  } catch (error) {
+    console.error('Error al obtener archivos del learning:', error);
+    return [];
+  }
 };
 
 /**

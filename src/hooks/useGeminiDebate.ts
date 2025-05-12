@@ -3,6 +3,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { generateGeminiResponse, mockGeminiResponse } from '@/services/geminiService';
 import { getTurnsByCount } from '@/components/debate/session/controls/DebateTurnStructure';
+// import { createContextCache } from '@/services/geminiCacheService';
+import { getLearningById } from '@/services/learningService';
+import { getFilesWithContent } from '@/services/fileStorageService';
 
 // Tipo para mensaje de debate
 export interface DebateMessage {
@@ -23,6 +26,7 @@ interface DebateConfig {
   turnCount: number;
   opponent: string;
   positions: Record<string, string>;
+  learningId?: string; // ID del learning asociado al debate para recuperar archivos
 }
 
 /**
@@ -39,6 +43,27 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string>('');
+  
+  // Estado para el caché de contexto (deshabilitado temporalmente)
+  // const [contextCacheId, setContextCacheId] = useState<string | null>(null);
+  // const [isCreatingCache, setIsCreatingCache] = useState<boolean>(false);
+  // const [isCacheReady, setIsCacheReady] = useState<boolean>(false);
+  
+  // Estado para almacenar el contexto del learning
+  const [learningContext, setLearningContext] = useState<{
+    text: string | null;
+    files: Array<{id: string; name: string; type: string; content: string}>
+  }>({ text: null, files: [] });
+  const [isLoadingContext, setIsLoadingContext] = useState<boolean>(false);
+  const [isContextReady, setIsContextReady] = useState<boolean>(false);
+  
+  // Solo mostrar el log en modo de desarrollo y solo cuando sea necesario
+  useEffect(() => {
+    // Mostrar el log solo una vez al inicializar
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEBUG] useGeminiDebate inicializado con learningId: ${debateConfig.learningId} (id=${debateConfig.id})`);
+    }
+  }, [debateConfig.learningId, debateConfig.id]); // Solo se ejecuta si cambia el learningId o id
 
   // Cargar la API key desde env al montar el componente
   useEffect(() => {
@@ -50,6 +75,96 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
       console.warn('No se encontró NEXT_PUBLIC_GEMINI_API_KEY en variables de entorno');
     }
   }, []);
+  
+  // Cargar el contexto del learning (texto y archivos)
+  useEffect(() => {
+    async function loadLearningContext() {
+      if (!debateConfig.learningId) {
+        // Si no hay learningId, marcamos el contexto como listo pero vacío
+        console.log('No hay learningId, no se cargará contexto');
+        setIsContextReady(true);
+        return;
+      }
+      
+      setIsLoadingContext(true);
+      setIsContextReady(false);
+      
+      try {
+        // Cargar datos del learning
+        console.log(`Cargando contexto para learningId: ${debateConfig.learningId}`);
+        const learning = getLearningById(debateConfig.learningId);
+        
+        if (!learning) {
+          console.warn(`No se encontró learning con ID: ${debateConfig.learningId}`);
+          setIsContextReady(true);
+          setIsLoadingContext(false);
+          return;
+        }
+        
+        let contextText = null;
+        
+        if (learning?.content?.text) {
+          console.log(`Contexto de texto encontrado: ${learning.content.text.substring(0, 50)}...`);
+          contextText = learning.content.text;
+        } else {
+          console.log('No se encontró texto en el learning');
+        }
+        
+        // Cargar archivos si hay fileIds disponibles
+        let contextFiles: Array<{id: string; name: string; type: string; content: string}> = [];
+        
+        if (learning?.content?.fileIds && learning.content.fileIds.length > 0) {
+          console.log(`Cargando ${learning.content.fileIds.length} archivos para contexto: ${JSON.stringify(learning.content.fileIds)}`);
+          
+          try {
+            const files = await getFilesWithContent(learning.content.fileIds);
+            contextFiles = files.map(file => ({
+              id: file.id,
+              name: file.name,
+              type: file.type,
+              content: file.content
+            }));
+            console.log(`${contextFiles.length} archivos cargados con contexto: ${contextFiles.map(f => f.name).join(', ')}`);
+          } catch (fileError) {
+            console.error('Error cargando archivos:', fileError);
+          }
+        } else if (learning?.content?.fileNames && learning.content.fileNames.length > 0) {
+          // Si no tenemos fileIds pero tenemos fileNames (compatibilidad)
+          console.log('Solo tenemos fileNames, no fileIds (modo de compatibilidad)');
+        }
+        
+        const newContext = {
+          text: contextText,
+          files: contextFiles
+        };
+        
+        console.log('Contexto cargado exitosamente:', {
+          hasText: !!newContext.text,
+          filesCount: newContext.files.length,
+          fileNames: newContext.files.map(f => f.name)
+        });
+        
+        setLearningContext(newContext);
+      } catch (error) {
+        console.error('Error al cargar el contexto del learning:', error);
+      } finally {
+        setIsLoadingContext(false);
+        setIsContextReady(true);
+      }
+    }
+    
+    loadLearningContext();
+  }, [debateConfig.learningId]);
+
+  // Deshabilitamos temporalmente la creación de caché de contexto debido a problemas de CORS
+  useEffect(() => {
+    // Marcar siempre como listo para no bloquear el flujo
+    // setIsCacheReady(true); // Comentado para resolver error de lint
+    
+    if (debateConfig.learningId && apiKey) {
+      console.log(`Omitiendo creación de caché para learning: ${debateConfig.learningId} - usando contexto directo`);
+    }
+  }, [debateConfig.learningId, apiKey]);
 
   /**
    * Genera un ID único para mensajes
@@ -161,8 +276,21 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
         name: getOpponentName(debateConfig.opponent)
       },
       context: {
-        documents: [] as unknown[], // Se puede implementar después para incluir contenido de learning
-        files: [] as unknown[]
+        // Incluir texto del learning como documento si existe
+        documents: learningContext.text ? [
+          {
+            text: learningContext.text,
+            title: 'Learning Content'
+          }
+        ] : [],
+        // Incluir archivos del learning si existen
+        files: learningContext.files.map(file => ({
+          name: file.name,
+          mimeType: file.type,
+          content: file.content,
+          fileId: file.id
+        })),
+        // Nota: Temporalmente deshabilitada la funcionalidad de caché
       },
       history: topicHistory.map(msg => ({
         speaker: msg.speaker,
@@ -171,7 +299,7 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
         turnType: msg.turnType
       }))
     };
-  }, [history, debateConfig, getOpponentName]);
+  }, [history, debateConfig, getOpponentName, learningContext]);
 
   /**
    * Solicita una respuesta a Gemini 
@@ -186,6 +314,25 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
     setError(null);
     
     try {
+      // Omitimos la espera del caché ya que está deshabilitado temporalmente
+      // La función marcará isCacheReady como true inmediatamente
+      
+      // Esperar a que el contexto esté listo
+      if (!isContextReady) {
+        console.log('Esperando a que el contexto del learning esté cargado...');
+        const maxContextWaitTime = 5000; // 5 segundos máximo de espera
+        const startTime = Date.now();
+        
+        while (!isContextReady && (Date.now() - startTime < maxContextWaitTime)) {
+          // Esperar 100ms antes de verificar nuevamente
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        if (!isContextReady) {
+          console.warn('Tiempo de espera agotado para la carga del contexto, continuando sin él');
+        }
+      }
+      
       // Crear el mensaje del usuario
       const userMsg: DebateMessage = {
         id: generateMessageId(),
@@ -196,8 +343,24 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
         timestamp: Date.now()
       };
       
+      // Verificar que el contexto está listo y disponible
+      if (!isContextReady || isLoadingContext) {
+        console.log('Atención: El contexto aún no está completamente cargado. Esperando...');
+        // Esperar explícitamente a que el contexto esté listo
+        const maxWaitTime = 2000; // 2 segundos máximo
+        const startWaitTime = Date.now();
+        while (!isContextReady || isLoadingContext) {
+          // Esperar 50ms y verificar de nuevo
+          await new Promise(resolve => setTimeout(resolve, 50));
+          // Evitar espera infinita
+          if (Date.now() - startWaitTime > maxWaitTime) {
+            console.warn('Tiempo de espera agotado para la carga del contexto');
+            break;
+          }
+        }
+      }
+      
       // Preparar input para Gemini incluyendo el mensaje del usuario actual
-      // incluso antes de actualizar el estado (history) para evitar problemas de timing
       const geminiInput = generateGeminiInput(
         currentTopic,
         currentTurnType,
@@ -208,7 +371,35 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
       // Actualizar el historial con el mensaje del usuario
       setHistory(prev => [...prev, userMsg]);
       
+      // Validación adicional del contexto (diagnóstico)
+      console.log('Estado del contexto antes de enviar:', {
+        isContextReady,
+        learningTextLength: learningContext.text ? learningContext.text.length : 0,
+        filesCount: learningContext.files.length,
+        fileNames: learningContext.files.map(f => f.name)
+      });
+      
+      // Log detallado del contexto que se enviará
       console.log('Input para Gemini:', geminiInput);
+      // Logs mejorados para diagnóstico
+      console.log('Contexto enviado a Gemini:', {
+        documentCount: geminiInput.context.documents ? geminiInput.context.documents.length : 0,
+        fileCount: geminiInput.context.files ? geminiInput.context.files.length : 0,
+        hasCache: 'contextCacheId' in geminiInput.context ? !!geminiInput.context.contextCacheId : false,
+        fileNames: geminiInput.context.files && geminiInput.context.files.length > 0 
+          ? Array.from(geminiInput.context.files).map(file => {
+              const fileObj = file as {name?: string};
+              return fileObj.name || 'archivo sin nombre';
+            }).join(', ') 
+          : 'No hay archivos',
+        documentText: geminiInput.context.documents && geminiInput.context.documents.length > 0 
+          ? typeof geminiInput.context.documents[0] === 'object' && geminiInput.context.documents[0] !== null && 'text' in geminiInput.context.documents[0]
+            ? String(geminiInput.context.documents[0].text).substring(0, 50) + '...' 
+            : 'Formato de documento inválido'
+          : 'No hay documentos'
+      });
+      
+      console.log('Usando contexto directo (caché deshabilitado temporalmente)');
       
       // Obtener respuesta: intentar con la API real o usar mock si no hay API key
       let response;
@@ -243,7 +434,7 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
     } finally {
       setIsGenerating(false);
     }
-  }, [apiKey, generateGeminiInput, generateMessageId]);
+  }, [apiKey, generateGeminiInput, generateMessageId, isContextReady, isLoadingContext, learningContext.files, learningContext.text]);
 
   // Exportar valores y funciones del hook
   return {

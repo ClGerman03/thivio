@@ -7,6 +7,7 @@ import InitialPositionSelection from '@/components/debate/steps/InitialPositionS
 import OpponentSelection from '@/components/debate/steps/OpponentSelection';
 import DebateFormatSelection from '@/components/debate/steps/DebateFormatSelection';
 import DebateNameSelection from '@/components/debate/steps/DebateNameSelection';
+import ContextSelection from '@/components/debate/steps/ContextSelection';
 
 type DebateConfigStepsProps = {
   currentStepIndex: number;
@@ -59,6 +60,13 @@ export default function DebateConfigSteps({
           <OpponentSelection 
             selectedOpponent={debateConfig.opponent}
             onSelectOpponent={(opponent) => updateDebateConfig('opponent', opponent)}
+          />
+        );
+      case 'context':
+        return (
+          <ContextSelection 
+            selectedLearningId={debateConfig.learningId}
+            onSelectLearning={(learningId) => updateDebateConfig('learningId', learningId)}
           />
         );
       case 'debateFormat':

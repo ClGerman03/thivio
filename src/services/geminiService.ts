@@ -42,6 +42,8 @@ type GeminiInputType = {
   context?: {
     documents?: unknown[];
     files?: unknown[];
+    // ID del caché de contexto creado previamente
+    contextCacheId?: string;
   };
   history?: DebateMessageHistory[];
 };
@@ -147,15 +149,42 @@ export async function generateGeminiResponse(inputJson: GeminiInputType, apiKey:
       });
     }
     
-    const requestBody = {
+    // Definir el tipo para el cuerpo de la solicitud
+    interface GeminiRequestBody {
+      contents: Array<{
+        role: string;
+        parts: Array<{
+          text?: string;
+          inlineData?: {
+            mimeType: string;
+            data: string;
+          };
+        }>;
+      }>;
+      generationConfig: {
+        temperature: number;
+        topP: number;
+        topK: number;
+        maxOutputTokens: number;
+      };
+      contextCacheIds?: string[];
+    }
+    
+    // Crear objeto para la solicitud
+    const requestBody: GeminiRequestBody = {
       contents: chatHistory,
       generationConfig: {
         temperature: 0.7,
-        topK: 40,
         topP: 0.95,
-        maxOutputTokens: 800
-      }
+        topK: 40,
+        maxOutputTokens: 1024,
+      },
     };
+    
+    // Si hay un ID de caché de contexto, agregarlo a la solicitud
+    if (inputJson.context?.contextCacheId) {
+      requestBody.contextCacheIds = [inputJson.context.contextCacheId];
+    }
 
     console.log('Enviando a Gemini:', {
       url: GEMINI_API_URL,

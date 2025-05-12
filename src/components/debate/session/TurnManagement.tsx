@@ -46,19 +46,20 @@ export default function TurnManagement({
     }
   }, [activeSpeaker]);
   
-  // Si es el turno del usuario, no mostramos nada en este componente
-  // ya que la entrada de texto se maneja en SpeakerVisualization -> TextInputVisualizer
-  if (activeSpeaker === 'user') {
-    return null;
-  }
+  // Ahora mostraremos el botón para ambos turnos (usuario y IA)
+  // pero con texto diferente según quién tenga el turno actual
   
   // Función para manejar el cambio de turno
   const handleTurnChangeClick = () => {
-    // Si el turno activo es del usuario, mostrar el popup de confirmación
+    // Determinar a qué hablante cambiar basándonos en el hablante actual
     if (activeSpeaker === 'user') {
+      // Si el turno activo es del usuario, mostrar el popup de confirmación
       setShowConfirmation(true);
+    } else if (activeSpeaker === 'ai') {
+      // Si el turno es de la IA, cambiar directamente al usuario
+      onChangeTurn('user');
     } else {
-      // Si el turno es de la IA, cambiar directamente
+      // Si no hay hablante activo, establecer el usuario como hablante
       onChangeTurn('user');
     }
   };
@@ -81,7 +82,7 @@ export default function TurnManagement({
         <div className="flex flex-col items-center gap-2">
           <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent dark:border-gray-400 dark:border-t-transparent rounded-full animate-spin"></div>
           <span className="text-xs text-gray-500 dark:text-gray-400 font-light">
-            {activeSpeaker === 'ai' ? opponentName || 'AI' : 'La IA'} está pensando...
+            {activeSpeaker === 'ai' ? opponentName || 'AI' : 'The AI'} is thinking...
           </span>
         </div>
       ) : (
@@ -93,7 +94,7 @@ export default function TurnManagement({
                       text-white bg-gray-700 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 
                       focus:outline-none flex items-center gap-1.5"
             onClick={handleTurnChangeClick}
-            aria-label="Tomar turno"
+            aria-label={activeSpeaker === 'user' ? 'Yield turn' : 'Take turn'}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 1l4 4-4 4"></path>
@@ -101,11 +102,11 @@ export default function TurnManagement({
               <path d="M7 23l-4-4 4-4"></path>
               <path d="M21 13v2a4 4 0 01-4 4H3"></path>
             </svg>
-            Tomar turno
+            {activeSpeaker === 'user' ? 'Yield turn' : 'Take turn'}
           </motion.button>
           
           <span className="text-xs text-gray-500 dark:text-gray-400 font-light">
-            Turno actual: {currentTurnName}
+            Current turn: {activeSpeaker === 'user' ? 'Your turn' : (opponentName || 'AI')} ({currentTurnName})
           </span>
         </>
       )}
@@ -115,7 +116,7 @@ export default function TurnManagement({
         isVisible={showConfirmation}
         onConfirm={handleConfirmChange}
         onCancel={handleCancelChange}
-        text="¿Estás seguro de que deseas ceder tu turno? Tu turno quedará vacío y esto contará en las estadísticas del debate."
+        text="Are you sure you want to yield your turn to the AI? If you haven't written anything, your turn will remain empty."
       />
     </div>
   );

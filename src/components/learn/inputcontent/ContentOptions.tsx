@@ -192,6 +192,7 @@ export default function ContentOptions({
         onTextSubmit={handleTextSubmit}
         existingFileName={initialFileNames || (uploadedFileName ? [uploadedFileName] : [])}
         existingText={initialText || savedText}
+        documentId={documentId} // Pasar el ID del documento para almacenar archivos en IndexedDB
       />
     </div>
   );

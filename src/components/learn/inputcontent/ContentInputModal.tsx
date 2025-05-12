@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import TextInputSection from './TextInputSection';
 import FileUploadSection from './FileUploadSection';
 import TextExamples from './TextExamples';
+import { addFilesToLearning } from '@/services/learningService';
 
 interface ContentInputModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface ContentInputModalProps {
   onTextSubmit: (text: string) => void;
   existingFileName?: string[] | string;
   existingText?: string;
+  documentId?: string; // ID del learning asociado
 }
 
 export default function ContentInputModal({ 
@@ -21,7 +23,8 @@ export default function ContentInputModal({
   onFileSubmit, 
   onTextSubmit, 
   existingFileName, 
-  existingText 
+  existingText,
+  documentId
 }: ContentInputModalProps) {
   // File states
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -86,10 +89,18 @@ export default function ContentInputModal({
     setIsSubmitting(true);
     
     try {
-      // Simulate processing (in a real app, this would be an API call)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Primero almacenar los archivos usando IndexedDB si tenemos documentId
+      if (documentId && selectedFiles.length > 0) {
+        console.log('Storing files in IndexedDB for learning:', documentId);
+        try {
+          // Almacenar archivos completos en IndexedDB
+          await addFilesToLearning(documentId, selectedFiles);
+        } catch (error) {
+          console.error('Error storing files in IndexedDB:', error);
+        }
+      }
       
-      // Submit files if any
+      // Submit files if any (para compatibilidad con el sistema actual)
       if (hasFiles) {
         onFileSubmit(selectedFiles);
       }
@@ -156,6 +167,7 @@ export default function ContentInputModal({
                   <FileUploadSection
                     selectedFiles={selectedFiles}
                     existingFiles={existingFiles}
+                    learningId={documentId}
                     onFilesChange={setSelectedFiles}
                     onExistingFilesChange={setExistingFiles}
                   />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 // Importaciones de popups eliminadas temporalmente
 import { DebateProvider } from '@/context/DebateContext';
 import { useDebateState } from '@/hooks/useDebateState';
@@ -21,12 +21,14 @@ const TEXT_MODE_ENABLED = true; // Cambiar a false para usar el modo de voz
 
 type DebateSessionProps = {
   debateConfig: {
+    id?: string; // ID único del debate
     topic: string;
     topics?: string[];
     debateFormat: string;
     turnCount: number;
     opponent: string;
     positions: Record<string, string>;
+    learningId?: string; // ID del learning asociado para usar como contexto
   };
   onDebateEnd: () => void;
   onConfigClick?: () => void; // Nueva función para volver a la configuración
@@ -38,6 +40,19 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
   
   // Estado del mensaje del usuario actual (modo texto)
   const [userMessage, setUserMessage] = useState<string>('');
+  
+  // Asegurarnos de que tenemos toda la configuración necesaria para el debate
+  // Usamos useMemo para evitar recrear este objeto en cada renderizado
+  const completeDebateConfig = useMemo(() => {
+    console.log('DebateSession configuración inicializada con learningId:', debateConfig.learningId);
+    return {
+      ...debateConfig,
+      // Asegurarnos de que ID sea único, pero que no cambie en cada renderizado
+      id: debateConfig.id || `debate-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      // Convertir topic a array de topics si no existe
+      topics: debateConfig.topics || [debateConfig.topic],
+    };
+  }, [debateConfig]); // Solo se recrea si debateConfig cambia
   
   // Estado para controlar el modo de entrada del usuario (texto o voz)
   const [userInputMode, setUserInputMode] = useState<'text' | 'voice'>('text');
@@ -74,7 +89,7 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
     // error: geminiError, // No utilizado
     getAIResponse
     // clearHistory      // No utilizado
-  } = useGeminiDebate(debateConfig);
+  } = useGeminiDebate(completeDebateConfig);
   
   // Interventions and messaging (mantenemos temporalmente para compatibilidad)
   const { 
@@ -238,7 +253,17 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
               onChangeTurn={(speaker: string) => {
                 // Conversión segura a 'user' | 'ai'
                 if (speaker === 'user' || speaker === 'ai') {
+                  // Verificamos si estamos cambiando de la IA al usuario para avanzar al turno siguiente
+                  const isChangingFromAIToUser = activeSpeaker === 'ai' && speaker === 'user';
+                  
+                  // Cambiamos el hablante activo
                   handleTurnChange(speaker);
+                  
+                  // Si estamos cambiando de la IA al usuario, avanzamos al siguiente turno
+                  if (isChangingFromAIToUser && TEXT_MODE_ENABLED) {
+                    console.log('Avanzando al siguiente turno después de que el usuario tomó el turno');
+                    nextTurn();
+                  }
                 }
               }}
               hasRecordedContent={hasRecordedContent}

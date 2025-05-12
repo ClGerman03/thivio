@@ -25,7 +25,8 @@ interface AIResponseVisualizerProps {
 }
 
 /**
- * A simple text-based AI response visualizer for testing Gemini integration
+ * A text-based AI response visualizer for the debate session
+ * Styled to match the TextInputVisualizer component
  */
 export default function AIResponseVisualizer({
   isActive,
@@ -36,9 +37,9 @@ export default function AIResponseVisualizer({
   if (!isActive) return null;
   
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto py-6">
-      <div className="w-full bg-gray-100 dark:bg-gray-850 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center mb-3">
+    <div className="w-full py-2">
+      <div className="relative w-full">
+        <div className="flex items-center mb-2 px-1">
           <div className={`w-3 h-3 rounded-full mr-2 ${isThinking ? 'bg-yellow-500 animate-pulse' : 'bg-blue-500'}`}></div>
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
             {opponentName}
@@ -74,7 +75,7 @@ export default function AIResponseVisualizer({
         </div>
         
         {isThinking ? (
-          <div className="w-full p-4 bg-gray-50/70 dark:bg-gray-800/50 rounded-md flex items-center justify-center min-h-[100px]">
+          <div className="w-full p-3.5 bg-gray-100/70 dark:bg-gray-800/50 rounded-xl flex items-center justify-center min-h-[100px]">
             <div className="flex space-x-2 justify-center items-center">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -86,9 +87,9 @@ export default function AIResponseVisualizer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="w-full p-4 bg-gray-50/70 dark:bg-gray-800/50 rounded-md text-gray-800 dark:text-gray-200"
+            className="w-full p-3.5 bg-gray-100/70 dark:bg-gray-800/50 rounded-xl text-gray-700 dark:text-gray-200"
           >
-            <p className="whitespace-pre-wrap">{content}</p>
+            <p className="whitespace-pre-wrap text-sm">{content}</p>
           </motion.div>
         )}
       </div>

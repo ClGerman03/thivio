@@ -69,9 +69,9 @@ export default function TextInputVisualizer({
       <div className="relative w-full">
         <textarea
           ref={textareaRef}
-          className="w-full p-3.5 bg-gray-100/70 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 
-                    border-none rounded-xl shadow-sm
-                    focus:outline-none focus:ring-0 focus:shadow-md
+          className="w-full p-3.5 bg-gray-100/70 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 text-sm
+                    border-none rounded-xl
+                    focus:outline-none focus:ring-0
                     resize-none overflow-hidden
                     placeholder:text-gray-400/80 dark:placeholder:text-gray-500/70"
           placeholder="Type your argument here..."
@@ -86,9 +86,9 @@ export default function TextInputVisualizer({
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           className={`absolute right-3 bottom-3 px-3 py-1.5 
-                     ${value.trim() ? 'bg-blue-500/90 hover:bg-blue-500' : 'bg-gray-400/80'} 
+                     ${value.trim() ? 'bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-800' : 'bg-gray-400/80'} 
                      text-white text-xs font-medium rounded-full 
-                     transition-all duration-200 shadow-sm
+                     transition-all duration-200
                      disabled:opacity-40 disabled:cursor-not-allowed
                      flex items-center gap-1.5`}
           onClick={onSend}

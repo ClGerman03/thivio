@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 type UserAvatarProps = {
   userInitial?: string;
@@ -56,6 +57,12 @@ export default function UserAvatar({ userInitial = 'U', onLogout }: UserAvatarPr
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
+            <Link href="/settings" passHref className="block">
+              <div className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                Settings
+              </div>
+            </Link>
+            <hr className="my-1 border-gray-100 dark:border-gray-700" />
             <button
               className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={onLogout}

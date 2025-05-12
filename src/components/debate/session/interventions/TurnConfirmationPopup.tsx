@@ -91,7 +91,7 @@ export default function TurnConfirmationPopup({
                   className="px-5 py-1.5 text-xs bg-blue-600 text-white rounded-full
                           hover:bg-blue-700 transition-colors focus:outline-none"
                 >
-                  Confirmar
+                  Confirm
                 </button>
                 
                 {/* Cancel button */}
@@ -102,7 +102,7 @@ export default function TurnConfirmationPopup({
                           hover:bg-gray-100 dark:hover:bg-gray-800/50
                           transition-colors focus:outline-none"
                 >
-                  Cancelar
+                  Cancel
                 </button>
               </div>
             </div>
