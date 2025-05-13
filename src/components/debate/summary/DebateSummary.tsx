@@ -36,6 +36,14 @@ type DebateSummaryProps = {
     debateType: string;
     userRole: string;
   };
+  debateHistory?: Array<{
+    id: string;
+    speaker: 'user' | 'opponent';
+    content: string;
+    topic: string;
+    turnType: string;
+    timestamp: number;
+  }>; // Historial del debate pasado desde DebateSession
   onFinish: () => void;
 };
 
@@ -163,31 +171,33 @@ function ActionButtons({ onFinish }: { onFinish: () => void }) {
   );
 }
 
-function DebateSummary({ debateConfig, onFinish }: DebateSummaryProps) {
+function DebateSummary({ debateConfig, debateHistory, onFinish }: DebateSummaryProps) {
   const router = useRouter();
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   
-  // Use the debate summary hook to generate the summary
-  // Note: In a real implementation, we would get interventions from context
+  // Use the debate summary hook to generate the summary con el historial real
   const { generateSummary } = useDebateSummary(
-    [], // Simulate empty interventions for demo
+    [], // Mantenemos las intervenciones vacías para compatibilidad
     {
       topic: debateConfig.topic,
       topics: debateConfig.topics,
       positions: { 'user': debateConfig.userRole, 'ai': 'opponent' },
       debateFormat: debateConfig.debateType
-    }
+    },
+    debateHistory // Pasamos el historial del debate para el análisis
   );
 
   // Effect to analyze the debate and get the summary
   useEffect(() => {
     const analyzeDebate = async () => {
       try {
-        // Simulate delay to show loading state
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Si tenemos historial, lo usamos para el análisis
+        if (debateHistory && debateHistory.length > 0) {
+          console.log(`Analizando debate con ${debateHistory.length} mensajes`);
+        }
         
-        // Get structured summary
+        // Get structured summary usando el historial real
         const data = await generateSummary();
         setSummaryData(data);
         
@@ -200,7 +210,7 @@ function DebateSummary({ debateConfig, onFinish }: DebateSummaryProps) {
     };
 
     analyzeDebate();
-  }, [generateSummary]);
+  }, [generateSummary, debateHistory]);
 
   const handleFinish = () => {
     // Call the original onFinish callback if needed

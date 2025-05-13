@@ -6,7 +6,7 @@ import { DebateProvider } from '@/context/DebateContext';
 import { useDebateState } from '@/hooks/useDebateState';
 import { useDebateInterventions } from '@/hooks/useDebateInterventions';
 import { useDebateSummary } from '@/hooks/useDebateSummary';
-import { useGeminiDebate } from '@/hooks/useGeminiDebate';
+import { useGeminiDebate, DebateMessage } from '@/hooks/useGeminiDebate';
 
 // Importar componentes UI
 import SpeakerVisualization from './ui/SpeakerVisualization';
@@ -30,7 +30,7 @@ type DebateSessionProps = {
     positions: Record<string, string>;
     learningId?: string; // ID del learning asociado para usar como contexto
   };
-  onDebateEnd: () => void;
+  onDebateEnd: (debateHistory?: DebateMessage[]) => void; // Modificado para aceptar el historial
   onConfigClick?: () => void; // Nueva función para volver a la configuración
 };
 
@@ -284,7 +284,9 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
               onGenerateSummary={generateTextSummary}
               onDebateEnd={() => {
                 console.log('Finalizando debate desde DebateSession');
-                onDebateEnd();
+                console.log('Historial de debate a pasar:', history.length, 'mensajes');
+                // Pasar el historial completo al finalizar
+                onDebateEnd(history);
               }}
               onConfigClick={onConfigClick}
             />

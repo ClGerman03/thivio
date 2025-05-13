@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { generateGeminiResponse, mockGeminiResponse } from '@/services/geminiService';
+import { generateGeminiResponse, mockGeminiResponse } from '@/services/gemini';
 import { getTurnsByCount } from '@/components/debate/session/controls/DebateTurnStructure';
 // import { createContextCache } from '@/services/geminiCacheService';
 import { getLearningById } from '@/services/learningService';

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Carousel from '@/components/ui/Carousel';
 
 type OpponentSelectionProps = {
   selectedOpponent: string;
@@ -14,6 +15,7 @@ type Opponent = {
   description: string;
   strengths: string[];
   debateStyle: string;
+  imageSrc?: string; // URL de la imagen para el oponente
 };
 
 export default function OpponentSelection({
@@ -34,7 +36,8 @@ export default function OpponentSelection({
         'Challenges logical fallacies',
         'Promotes self-reflection'
       ],
-      debateStyle: 'Uses systematic questioning to help you reach your own conclusions'
+      debateStyle: 'Uses systematic questioning to help you reach your own conclusions',
+      imageSrc: '/images/opponents/socrates.png'
     },
     {
       id: 'aristotle',
@@ -45,7 +48,8 @@ export default function OpponentSelection({
         'Focuses on practical wisdom',
         'Identifies causal relationships'
       ],
-      debateStyle: 'Organizes arguments into categories and draws on examples to support claims'
+      debateStyle: 'Organizes arguments into categories and draws on examples to support claims',
+      imageSrc: '/images/opponents/aristotle.png'
     },
     {
       id: 'kant',
@@ -56,7 +60,8 @@ export default function OpponentSelection({
         'Explores universal principles',
         'Examines duties and obligations'
       ],
-      debateStyle: 'Applies rigorous logical analysis to determine universal principles'
+      debateStyle: 'Applies rigorous logical analysis to determine universal principles',
+      imageSrc: '/images/opponents/kant.png'
     }
   ], []);
   
@@ -70,7 +75,8 @@ export default function OpponentSelection({
         'Structured analysis',
         'Precise communication'
       ],
-      debateStyle: 'Combines analytical precision with practical examples from diverse fields'
+      debateStyle: 'Combines analytical precision with practical examples from diverse fields',
+      imageSrc: '/images/opponents/analytical.png'
     },
     {
       id: 'creative',
@@ -81,7 +87,8 @@ export default function OpponentSelection({
         'Engaging storytelling',
         'Novel perspectives'
       ],
-      debateStyle: 'Uses narratives and analogies to illuminate complex ideas in accessible ways'
+      debateStyle: 'Uses narratives and analogies to illuminate complex ideas in accessible ways',
+      imageSrc: '/images/opponents/creative.png'
     },
     {
       id: 'pragmatic',
@@ -92,7 +99,8 @@ export default function OpponentSelection({
         'Practical assessment',
         'Result-focused arguments'
       ],
-      debateStyle: 'Focuses on actionable insights and testing ideas through practical application'
+      debateStyle: 'Focuses on actionable insights and testing ideas through practical application',
+      imageSrc: '/images/opponents/pragmatic.png'
     }
   ], []);
   
@@ -130,72 +138,74 @@ export default function OpponentSelection({
     return [...philosopherOpponents, ...styleOpponents].find(opp => opp.id === selectedOpponent);
   }, [selectedOpponent, philosopherOpponents, styleOpponents]);
 
+  // Renderizar el contenido del carrusel
+  const renderOpponentItem = (opponent: Opponent) => (
+    <div 
+      className="w-full max-w-[180px] h-[180px] rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800/30 flex flex-col items-center justify-center cursor-pointer"
+    >
+      {opponent?.imageSrc ? (
+        <div className="w-full h-3/4 relative overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center" 
+            style={{ backgroundImage: `url(${opponent.imageSrc})` }}
+          />
+        </div>
+      ) : null}
+      <div className="w-full h-1/4 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+        <h3 className="text-sm font-medium text-center text-gray-800 dark:text-gray-200">
+          {opponent.name}
+        </h3>
+      </div>
+    </div>
+  );
+
   return (
     <div className="w-full max-w-xl py-4">
       {/* Selector de categoría de oponentes */}
-      <div className="flex rounded-md bg-white dark:bg-gray-900 p-[1px] mb-6">
+      <div className="flex justify-center space-x-2 mb-6">
         <button
           onClick={() => setCategory('styles')}
-          className={`flex-1 text-[11px] py-2 px-3 transition-colors ${category === 'styles'
-            ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium'
-            : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+          className={`text-[11px] py-1.5 px-4 rounded-full transition-colors ${category === 'styles'
+            ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}
         >
           Debate Styles
         </button>
         <button
           onClick={() => setCategory('philosophers')}
-          className={`flex-1 text-[11px] py-2 px-3 transition-colors ${category === 'philosophers'
-            ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium'
-            : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+          className={`text-[11px] py-1.5 px-4 rounded-full transition-colors ${category === 'philosophers'
+            ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}
         >
           Historical Philosophers
         </button>
       </div>
       
-      {/* Tarjetas de oponentes */}
+      {/* Carrusel de oponentes */}
       <AnimatePresence mode="wait">
-        <motion.div 
+        <motion.div
           key={`category-${category}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="grid grid-cols-3 gap-3 mb-6"
         >
-          {opponents.map((opponent) => (
-          <motion.div
-            key={opponent.id}
-            className={`
-              aspect-square rounded-lg cursor-pointer overflow-hidden
-              border transition-all
-              ${selectedOpponent === opponent.id 
-                ? 'border-gray-400 dark:border-gray-500 shadow-md' 
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}
-            `}
-            whileHover={{ y: -2, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onSelectOpponent(opponent.id)}
-          >
-            <div className="w-full h-full flex flex-col">
-              <div className={`
-                flex-grow flex items-center justify-center p-2
-                ${selectedOpponent === opponent.id 
-                  ? 'bg-gray-50 dark:bg-gray-800/50' 
-                  : 'bg-white/60 dark:bg-gray-800/30'}
-              `}>
-                <h3 className="text-base font-medium text-center text-gray-700 dark:text-gray-300">
-                  {opponent.name}
-                </h3>
-              </div>
-            </div>
-          </motion.div>
-          ))}
+          {currentOpponent && (
+            <Carousel 
+              items={opponents}
+              selectedItem={currentOpponent}
+              onSelectItem={(opponent) => onSelectOpponent(opponent.id)}
+              getItemId={(opponent) => opponent.id}
+              renderItem={renderOpponentItem}
+              className="mb-4"
+            />
+          )}
         </motion.div>
       </AnimatePresence>
       
-      {/* Detalles del oponente seleccionado */}
+      {/* Detalles del oponente simplificados */}
       <AnimatePresence mode="wait">
         {currentOpponent && (
           <motion.div
@@ -204,40 +214,28 @@ export default function OpponentSelection({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-4"
+            className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3 mb-2"
           >
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {currentOpponent.name}
-              </h4>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {currentOpponent.description}
-              </p>
-            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 text-left">
+              {currentOpponent.description}
+            </p>
             
-            <div className="mb-3">
-              <h5 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Strengths:
-              </h5>
-              <div className="flex flex-wrap gap-2">
-                {currentOpponent.strengths.map((strength, index) => (
-                  <div 
-                    key={`${currentOpponent.id}-strength-${index}`}
-                    className="text-xs px-2 py-1 bg-white/80 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 rounded-md"
-                  >
-                    {strength}
-                  </div>
-                ))}
+            <div className="space-y-2">
+              <div>
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {currentOpponent.strengths.map((strength, index) => (
+                    <span 
+                      key={`${currentOpponent.id}-strength-${index}`}
+                      className="inline-block text-[9px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 rounded-sm"
+                    >
+                      {strength}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 text-left">
+                  <span className="font-medium text-gray-600 dark:text-gray-300">Style:</span> {currentOpponent.debateStyle}
+                </p>
               </div>
-            </div>
-            
-            <div>
-              <h5 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Debate style:
-              </h5>
-              <p className="text-xs text-gray-600 dark:text-gray-400 italic">
-                {currentOpponent.debateStyle}
-              </p>
             </div>
           </motion.div>
         )}

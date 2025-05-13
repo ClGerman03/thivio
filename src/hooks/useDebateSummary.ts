@@ -1,13 +1,25 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { analyzeDebateWithGemini } from '@/services/gemini';
 
+// Interfaces para mensajes de debate
 interface Intervention {
   speaker: 'user' | 'ai';
   position: string;
   content: string;
   topic: string;
   turn: number;
+}
+
+// Tipo para mensajes de debate (compatible con DebateMessage de useGeminiDebate)
+interface DebateMessage {
+  id: string;
+  speaker: 'user' | 'opponent';
+  content: string;
+  topic: string;
+  turnType: string;
+  timestamp: number;
 }
 
 interface DebateSkill {
@@ -32,26 +44,97 @@ interface DebateConfig {
 }
 
 /**
- * Custom hook for generating debate summaries based on interventions
+ * Custom hook for generating debate summaries based on interventions or debate history
  * 
- * @param interventions List of all debate interventions
+ * @param interventions List of all debate interventions (deprecated, will be removed)
  * @param debateConfig Debate configuration
- * @returns Object with function to generate summary
+ * @param debateHistory Optional parameter for the complete debate history
+ * @returns Object with functions to generate summary
  */
 export function useDebateSummary(
   interventions: Intervention[],
-  debateConfig: DebateConfig
+  debateConfig: DebateConfig,
+  debateHistory?: DebateMessage[]
 ) {
+  // Estado para almacenar la API key
+  const [apiKey, setApiKey] = useState<string>('');
+  
+  // Cargar la API key al montar el componente
+  useState(() => {
+    const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+    setApiKey(key);
+    
+    if (!key) {
+      console.warn('No se encontró NEXT_PUBLIC_GEMINI_API_KEY en variables de entorno');
+    }
+  });
   /**
- * Generate a structured summary of the debate based on recorded interventions
+ * Generate a structured summary of the debate based on debate history
  * @returns Promise with a structured debate summary data object
  */
 const generateSummary = useCallback(async (): Promise<DebateSummaryData> => {
-  // Simulate API call delay - in a real implementation this would call Gemini API
+  // Verificar si tenemos historial de debate para analizar
+  if (debateHistory && debateHistory.length > 0) {
+    try {
+      // Obtener el nombre del rol del usuario para el análisis
+      const userRole = debateConfig.positions?.user || 'usuario';
+      
+      // Configurar los parámetros para el análisis
+      const analysisConfig = {
+        topic: debateConfig.topic,
+        topics: debateConfig.topics,
+        debateFormat: debateConfig.debateFormat || 'Estándar',
+        userRole
+      };
+      
+      console.log('Analizando debate con Gemini. Mensajes:', debateHistory.length);
+      
+      // Importar el tipo DebateMessageHistory del archivo geminiService.ts
+      type DebateMessageHistory = {
+        speaker: 'user' | 'opponent';
+        content: string;
+        topic: string;
+        turnType: string;
+      };
+
+      // Convertir DebateMessage[] a DebateMessageHistory[] para compatibilidad con analyzeDebateWithGemini
+      const formattedHistory: DebateMessageHistory[] = debateHistory.map(msg => ({
+        speaker: msg.speaker as 'user' | 'opponent', // Aseguramos que speaker sea del tipo correcto
+        content: msg.content,
+        topic: msg.topic,
+        turnType: msg.turnType
+      }));
+      
+      // Llamar a la función de análisis con Gemini
+      if (apiKey) {
+        const analysis = await analyzeDebateWithGemini(
+          formattedHistory,
+          analysisConfig,
+          apiKey
+        );
+        
+        // Convertir la respuesta de análisis al formato DebateSummaryData
+        return {
+          score: analysis.score,
+          strengths: analysis.strengths,
+          weaknesses: analysis.weaknesses,
+          highlights: analysis.highlights,
+          recommendations: analysis.recommendations,
+          skills: analysis.skills
+        };
+      } else {
+        console.warn('No se encontró API key para Gemini, generando análisis de fallback');
+      }
+    } catch (error) {
+      console.error('Error al analizar el debate:', error);
+    }
+  }
+  
+  // Fallback: Si no hay historial o hubo un error, usar el análisis basado en intervenciones
   return new Promise<DebateSummaryData>((resolve) => {
     setTimeout(() => {
       // If no interventions, return default summary
-      if (interventions.length === 0) {
+      if (!debateHistory && interventions.length === 0) {
         resolve({
           score: 0,
           strengths: 'No debate data available for analysis.',
@@ -128,7 +211,7 @@ const generateSummary = useCallback(async (): Promise<DebateSummaryData> => {
       resolve(summaryData);
     }, 1500); // Simulate processing delay
   });
-}, [interventions]);
+}, [interventions, debateHistory, debateConfig, apiKey]);
   
   /**
  * Generate a text-only summary for simpler use cases
