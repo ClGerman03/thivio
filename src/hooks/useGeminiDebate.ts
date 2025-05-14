@@ -379,8 +379,10 @@ export function useGeminiDebate(debateConfig: DebateConfig) {
         fileNames: learningContext.files.map(f => f.name)
       });
       
-      // Log detallado del contexto que se enviará
-      console.log('Input para Gemini:', geminiInput);
+      // Log completo y formateado del input para Gemini
+      console.log('==================== INPUT COMPLETO PARA GEMINI ====================');
+      console.log(JSON.stringify(geminiInput, null, 2));
+      console.log('========================================================================');
       // Logs mejorados para diagnóstico
       console.log('Contexto enviado a Gemini:', {
         documentCount: geminiInput.context.documents ? geminiInput.context.documents.length : 0,

@@ -1,0 +1,32 @@
+{
+  "topic": {
+    "name": "Ejemplo corto para prueba",
+    "userPosition": "Posición de ejemplo"
+  },
+  "opponent": {
+    "id": "opponent",
+    "name": "AI Opponent"
+  },
+  "debateConfig": {
+    "format": "turn-based",
+    "totalTurns": 2
+  },
+  "history": [
+    {
+      "id": "msg1",
+      "speaker": "user",
+      "content": "Este es un mensaje de prueba corto.",
+      "topic": "Tema prueba",
+      "turnType": "initial",
+      "timestamp": 1715633600000
+    },
+    {
+      "id": "msg2",
+      "speaker": "opponent",
+      "content": "Esta es una respuesta breve de prueba.",
+      "topic": "Tema prueba",
+      "turnType": "response",
+      "timestamp": 1715633660000
+    }
+  ]
+}

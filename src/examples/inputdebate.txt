@@ -1,0 +1,108 @@
+{
+  "debateConfig": {
+    "id": "debate-1747186932639-31f5p8t",
+    "format": "turn-based",
+    "turnStructure": [
+      {
+        "turnType": "Initial Position",
+        "turnIndex": 2
+      },
+      {
+        "turnType": "Rebuttal or Counterargument",
+        "turnIndex": 2
+      },
+      {
+        "turnType": "Closing Reflection",
+        "turnIndex": 2
+      }
+    ],
+    "totalTurns": 3,
+    "currentTurnIndex": 2,
+    "currentTurnType": "Closing Reflection"
+  },
+  "topic": {
+    "name": "Energia nuclear vs renovable",
+    "userPosition": "Defiendo la energia nuclear"
+  },
+  "opponent": {
+    "id": "analytical",
+    "name": "AI"
+  },
+  "context": {
+    "documents": [
+      {
+        "text": "Renewable energy sources like solar, wind, and hydroelectric power provide sustainable alternatives to fossil fuels. Implementation challenges include intermittency issues, grid integration, storage limitations, and high initial capital costs. Despite these obstacles, technological advances are rapidly improving efficiency and reducing costs, making renewable energy increasingly competitive in global markets.",
+        "title": "Learning Content"
+      }
+    ],
+    "files": []
+  },
+  "history": [
+    {
+      "speaker": "user",
+      "content": "La energía nuclear produce electricidad constante sin depender del clima, a diferencia de la solar o eólica. Es el complemento perfecto para una matriz energética estable y limpia",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Initial Position"
+    },
+    {
+      "speaker": "opponent",
+      "content": "La energía renovable, aunque intermitente, presenta un camino más sostenible a largo plazo. Los costes de la energía solar y eólica están disminuyendo rápidamente, mientras que la energía nuclear enfrenta desafíos persistentes en cuanto a gestión de residuos y riesgos de seguridad. Invertir en tecnologías de almacenamiento y redes inteligentes puede mitigar la intermitencia de las renovables, creando un sistema energético más resiliente y ambientalmente responsable.\n",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Initial Position"
+    },
+    {
+      "speaker": "user",
+      "content": "Francia obtiene más del 70% de su electricidad de plantas nucleares con bajas emisiones de carbono. Si queremos frenar el cambio climático, debemos considerar seriamente su ejemplo.",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Rebuttal or Counterargument"
+    },
+    {
+      "speaker": "opponent",
+      "content": "El modelo francés, aunque exitoso, no está exento de riesgos y altos costes de mantenimiento. La construcción de nuevas plantas nucleares es costosa y lleva mucho tiempo. Además, la dependencia de un solo tipo de energía crea vulnerabilidad. Diversificar las fuentes de energía, incluyendo renovables y otras tecnologías limpias, ofrece una solución más equilibrada y adaptable a largo plazo.\n",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Rebuttal or Counterargument"
+    },
+    {
+      "speaker": "user",
+      "content": "Los residuos nucleares son mínimos y gestionables comparados con los efectos del CO₂ en la atmósfera. Hoy, la tecnología permite hacerlo de forma segura y eficiente.",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Closing Reflection"
+    },
+    {
+      "speaker": "opponent",
+      "content": "Si bien el volumen de residuos nucleares es menor, su peligrosidad y el desafío de su almacenamiento a largo plazo persisten. Las soluciones actuales son provisionales y no eliminan el riesgo de contaminación. Una transición energética basada en renovables minimiza estos riesgos, promoviendo un futuro más limpio y seguro para las próximas generaciones. La innovación en almacenamiento de energía y redes inteligentes ofrece una alternativa pragmática y sostenible a la energía nuclear.\n",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Closing Reflection"
+    },
+    {
+      "speaker": "user",
+      "content": "Mi reflexión final es que podemos encontrarnos en un punto medio donde incentivos inversión en aquellas energias renovables más eficientes mientras potenciamos la energia nuclear con protocolos de seguridad.",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Closing Reflection"
+    },
+    {
+      "speaker": "opponent",
+      "content": "Un enfoque integrado que combine energía nuclear y renovable podría ser una solución pragmática. Sin embargo, es crucial evaluar cuidadosamente los costes, riesgos y beneficios de cada opción. Priorizar la investigación y el desarrollo en almacenamiento de energía y redes inteligentes, junto con estrictos protocolos de seguridad nuclear, podría maximizar la eficiencia y minimizar el impacto ambiental de ambas fuentes. Un futuro energético sostenible requiere una evaluación continua y adaptabilidad a las nuevas tecnologías.\n",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Closing Reflection"
+    },
+    {
+      "speaker": "user",
+      "content": "¿Cuales crees que serian las mejores decisiones a tomar por la sociedad respecto a este tema en el futuro?",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Closing Reflection"
+    },
+    {
+      "speaker": "opponent",
+      "content": "La sociedad debería priorizar la inversión en investigación y desarrollo de tecnologías de almacenamiento de energía a gran escala, como baterías avanzadas y sistemas de almacenamiento hidroeléctrico bombeado. Paralelamente, es fundamental modernizar las redes eléctricas para mejorar la eficiencia y la capacidad de integración de fuentes renovables. Además, se deben establecer políticas claras y transparentes para la gestión de residuos nucleares, fomentando la innovación en tecnologías de reciclaje y almacenamiento seguro a largo plazo.\n",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Closing Reflection"
+    },
+    {
+      "speaker": "user",
+      "content": "Pero lo que haz planteado es un ideal en lugar de una series de puntos concreta a seguir",
+      "topic": "Energia nuclear vs renovable",
+      "turnType": "Closing Reflection"
+    }
+  ]
+}

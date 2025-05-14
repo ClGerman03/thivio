@@ -4,6 +4,7 @@ import {
   loadDebateConfig, 
   saveCompletedDebate
 } from '@/services/debateService';
+import { DebateMessage } from '@/hooks/useGeminiDebate';
 
 export type DebateConfig = {
   id: string; // ID único del debate
@@ -40,6 +41,8 @@ export type DebateWorkflowState = {
   showSummary: boolean;
   // Estado actual del debate (calculado automáticamente)
   debateState: DebateState;
+  // Historial del debate para análisis
+  debateHistory?: DebateMessage[];
 };
 
 export type DebateWorkflowActions = {
@@ -99,6 +102,8 @@ export function useDebateWorkflow({
   initialState
 }: UseDebateWorkflowProps): [DebateWorkflowState, DebateWorkflowActions] {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  // Estado para almacenar el historial del debate para análisis
+  const [debateHistory, setDebateHistory] = useState<DebateMessage[] | undefined>(undefined);
   
   // Cargar la configuración del debate y determinar su estado
   const [debateConfig, setDebateConfig] = useState<DebateConfig>(() => {
@@ -270,7 +275,14 @@ export function useDebateWorkflow({
   }, [debateConfig, documentId, learningId, onStepChange]);
 
   // Finalizar el debate, marcarlo como completado y mostrar resumen
-  const handleDebateEnd = useCallback(() => {
+  const handleDebateEnd = useCallback((history?: DebateMessage[]) => {
+    console.log('handleDebateEnd - Recibido historial de debate con', history?.length || 0, 'mensajes');
+    
+    // Guardar el historial del debate para análisis
+    if (history && history.length > 0) {
+      setDebateHistory(history);
+    }
+    
     // Marcar el debate como completado
     const updatedConfig = { ...debateConfig, isCompleted: true };
     setDebateConfig(updatedConfig);
@@ -349,7 +361,8 @@ export function useDebateWorkflow({
     debateConfig,
     debateStarted,
     showSummary,
-    debateState: getDebateState()
+    debateState: getDebateState(),
+    debateHistory
   };
 
   // Función para volver al modo de configuración

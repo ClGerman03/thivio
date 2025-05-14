@@ -1,0 +1,75 @@
+{
+  "contents": [
+    {
+      "role": "system",
+      "parts": [
+        {
+          "text": "Analiza este debate y genera un JSON con exact schema:\n{\n  \"score\": <0-100>,\n  \"strengths\": \"<1-3 frases>\",\n  \"weaknesses\": \"<1-3 frases>\",\n  \"highlights\": \"<texto breve>\",\n  \"recommendations\": \"<texto breve>\",\n  \"skills\": [\n    {\"skill\": \"Content\", \"value\": <0-100>},\n    {\"skill\": \"Structure\", \"value\": <0-100>},\n    {\"skill\": \"Style\", \"value\": <0-100>},\n    {\"skill\": \"Arguments\", \"value\": <0-100>},\n    {\"skill\": \"Response\", \"value\": <0-100>},\n    {\"skill\": \"Clarity\", \"value\": <0-100>}\n  ]\n}\nSólo genera el JSON, sin texto adicional, marcadores de código ni comentarios. Criterios: Content (calidad del contenido), Structure (organización), Style (comunicación), Arguments (solidez), Response (capacidad de respuesta), Clarity (precisión)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "\n          DEBATE CONTEXT:\n          - Topic: Energía nuclear vs renovable\n          - Format: turn-based\n          - Total turns: 3\n          - Opponent: AI Opponent (analytical)\n          \n          User's position: Defiendo la energía nuclear\n        "
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "La energía nuclear produce electricidad constante sin depender del clima, a diferencia de la solar o eólica. Es el complemento perfecto para una matriz energética estable y limpia."
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "La energía renovable, aunque intermitente, presenta un camino más sostenible a largo plazo. Los costes de la energía solar y eólica están disminuyendo rápidamente, mientras que la energía nuclear enfrenta desafíos persistentes en cuanto a gestión de residuos y riesgos de seguridad. Invertir en tecnologías de almacenamiento y redes inteligentes puede mitigar la intermitencia de las renovables, creando un sistema energético más resiliente y ambientalmente responsable."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Francia obtiene más del 70% de su electricidad de plantas nucleares con bajas emisiones de carbono. Si queremos frenar el cambio climático, debemos considerar seriamente su ejemplo."
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "El modelo francés, aunque exitoso, no está exento de riesgos y altos costes de mantenimiento. La construcción de nuevas plantas nucleares es costosa y lleva mucho tiempo. Además, la dependencia de un solo tipo de energía crea vulnerabilidad. Diversificar las fuentes de energía, incluyendo renovables y otras tecnologías limpias, ofrece una solución más equilibrada y adaptable a largo plazo."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Los residuos nucleares son mínimos y gestionables comparados con los efectos del CO₂ en la atmósfera. Hoy, la tecnología permite hacerlo de forma segura y eficiente. Mi reflexión final es que podemos encontrarnos en un punto medio donde incentivemos inversión en aquellas energías renovables más eficientes mientras potenciamos la energía nuclear con protocolos de seguridad."
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Si bien el volumen de residuos nucleares es menor, su peligrosidad y el desafío de su almacenamiento a largo plazo persisten. Las soluciones actuales son provisionales y no eliminan el riesgo de contaminación. Un enfoque integrado que combine energía nuclear y renovable podría ser una solución pragmática, pero es crucial evaluar cuidadosamente los costes, riesgos y beneficios de cada opción. Priorizar la investigación en almacenamiento de energía y redes inteligentes, junto con estrictos protocolos de seguridad nuclear, podría maximizar la eficiencia y minimizar el impacto ambiental de ambas fuentes. Un futuro energético sostenible requiere una evaluación continua y adaptabilidad a las nuevas tecnologías."
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "temperature": 0.2,
+    "topP": 0.95,
+    "topK": 40,
+    "maxOutputTokens": 1024,
+    "stopSequences": []
+  }
+}

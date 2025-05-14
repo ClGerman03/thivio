@@ -24,7 +24,8 @@ export default function DebateWorkflow({ documentId, learningId, onStepChange, i
     currentStepIndex,
     debateConfig,
     debateStarted,
-    showSummary
+    showSummary,
+    debateHistory
     // debateState omitido por no usarse
   }, {
     goToNextStep,
@@ -91,6 +92,7 @@ export default function DebateWorkflow({ documentId, learningId, onStepChange, i
                     debateType: debateConfig.debateFormat,  // Usar el formato real configurado
                     userRole: Object.keys(debateConfig.positions)[0] || '' // Rol del usuario
                   }}
+                  debateHistory={debateHistory}            // Pasar el historial del debate
                   onFinish={handleSummaryFinish}
                 />
               </motion.div>

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useDebateSummary } from '@/hooks/useDebateSummary';
 import SkillsRadarChart from './SkillsRadarChart';
 import FeedbackSections from './FeedbackSections';
+// Importamos los datos de prueba para depuración
+// Nota: Se eliminó la dependencia de datos de prueba
 
 // Definimos interfaces para los datos utilizados en el componente
 interface DebateConfigSummary {
@@ -176,41 +178,105 @@ function DebateSummary({ debateConfig, debateHistory, onFinish }: DebateSummaryP
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   
-  // Use the debate summary hook to generate the summary con el historial real
-  const { generateSummary } = useDebateSummary(
-    [], // Mantenemos las intervenciones vacías para compatibilidad
-    {
-      topic: debateConfig.topic,
-      topics: debateConfig.topics,
-      positions: { 'user': debateConfig.userRole, 'ai': 'opponent' },
-      debateFormat: debateConfig.debateType
-    },
-    debateHistory // Pasamos el historial del debate para el análisis
-  );
-
-  // Effect to analyze the debate and get the summary
+  // Usar solo el historial real de debate
+  const effectiveHistory = debateHistory && debateHistory.length > 0 
+    ? debateHistory 
+    : undefined;
+  
+  // Configuración efectiva para el debate
+  const effectiveConfig = {
+    topic: debateConfig.topic || '',
+    topics: debateConfig.topics && debateConfig.topics.length > 0 ? debateConfig.topics : [],
+    positions: { 'user': debateConfig.userRole || 'estudiante', 'ai': 'opponent' },
+    debateFormat: debateConfig.debateType || 'debate'
+  };
+  
+  // Usar el hook real de useDebateSummary
+  const { 
+    generateSummary, 
+    // isAnalyzing: isGeneratingSummary,  // No utilizado actualmente
+    // summaryData: hookSummaryData,      // No utilizado ya que usamos el estado local
+    error: summaryError 
+  } = useDebateSummary(effectiveConfig, effectiveHistory || []);
+  
+  // Loggear datos disponibles para debugging
   useEffect(() => {
+    console.log(`DebateSummary: Preparando análisis con historial de ${effectiveHistory?.length || 0} mensajes`);
+    
+    if (effectiveHistory && effectiveHistory.length > 0) {
+      console.log(`DebateSummary: Rango de tiempo del debate: ${new Date(effectiveHistory[0].timestamp).toLocaleTimeString()} - ${new Date(effectiveHistory[effectiveHistory.length-1].timestamp).toLocaleTimeString()}`);
+    }
+    
+    if (summaryError) {
+      console.error('DebateSummary: Error al generar el resumen:', summaryError);
+    }
+  }, [effectiveHistory, summaryError]);
+
+  // Evitar bucles de renderizado
+  const analysisCompletedRef = useRef(false);
+
+  // Effect to analyze the debate and get the summary - Ejcutar solo una vez
+  useEffect(() => {
+    // Evitar que se ejecute múltiples veces
+    if (analysisCompletedRef.current) {
+      return;
+    }
+
     const analyzeDebate = async () => {
       try {
+        // Marcar que ya iniciamos el análisis para evitar bucles
+        analysisCompletedRef.current = true;
+        
+        // Usamos el mismo historial efectivo que configuramos para el hook
+        const historyToAnalyze = effectiveHistory;
+        
         // Si tenemos historial, lo usamos para el análisis
-        if (debateHistory && debateHistory.length > 0) {
-          console.log(`Analizando debate con ${debateHistory.length} mensajes`);
+        if (historyToAnalyze && historyToAnalyze.length > 0) {
+          console.log(`DebateSummary: Analizando debate con ${historyToAnalyze.length} mensajes`);
+          // Mostrar detalles limitados del historial para debugging
+          console.log('Primeros 2 mensajes:', JSON.stringify(historyToAnalyze.slice(0, 2))?.substring(0, 300) + '...');
+        } else {
+          console.warn('DebateSummary: No se recibió historial de debate para análisis. Usando datos mock.');
         }
         
-        // Get structured summary usando el historial real
+        // Get structured summary usando el historial (real o mock según el caso)
+        console.log('DebateSummary: Iniciando análisis con Gemini...');
+        
+        // Medición del tiempo para diagnosticar performance
+        const startTime = performance.now();
         const data = await generateSummary();
+        const endTime = performance.now();
+        
+        console.log(`DebateSummary: Análisis completado en ${(endTime - startTime).toFixed(0)}ms:`, 
+          data ? {
+            score: data.score,
+            skillsCount: data.skills?.length || 0,
+            hasStrengths: !!data.strengths,
+            hasWeaknesses: !!data.weaknesses,
+            hasHighlights: !!data.highlights
+          } : 'Sin datos');
+          
         setSummaryData(data);
         
         // Finish analysis
         setIsAnalyzing(false);
       } catch (error) {
-        console.error('Error analyzing debate:', error);
+        console.error('Error en análisis de debate:', error);
         setIsAnalyzing(false);
+        
+        // Mensaje de error más amigable
+        // alert('Hubo un problema al analizar el debate. Por favor, intenta nuevamente.'); // Comentado para evitar molestias durante las pruebas
       }
     };
 
     analyzeDebate();
-  }, [generateSummary, debateHistory]);
+    
+    // Limpieza si se desmonta el componente
+    return () => {
+      analysisCompletedRef.current = false;
+    };
+  // Incluir dependencias necesarias
+  }, [effectiveHistory, generateSummary]);
 
   const handleFinish = () => {
     // Call the original onFinish callback if needed

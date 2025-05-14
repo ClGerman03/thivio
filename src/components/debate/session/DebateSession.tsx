@@ -93,7 +93,7 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
   
   // Interventions and messaging (mantenemos temporalmente para compatibilidad)
   const { 
-    interventions,
+    // interventions,     // No utilizado actualmente
     // showTurnPopup,    // No utilizado
     // turnPopupText,    // No utilizado
     // closePopup,       // No utilizado en el contexto actual
@@ -103,8 +103,12 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
     setShowTurnPopup
   } = useDebateInterventions(debateState, debateConfig);
   
-  // Debate summary generator
-  const { generateTextSummary } = useDebateSummary(interventions, debateConfig);
+  // Utilizamos el hook reimplementado para generar el resumen textual
+  const { generateTextSummary } = useDebateSummary(
+    debateConfig,
+    // Pasamos el historial actual de mensajes del debate
+    history
+  );
   
   // Estado para controlar el cambio de turno - Popups eliminados temporalmente
 

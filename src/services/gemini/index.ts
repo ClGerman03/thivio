@@ -18,8 +18,14 @@ export {
 // Re-exportar funciones para debates
 export { generateGeminiResponse } from './geminiDebate';
 
-// Re-exportar funciones para análisis
-export { analyzeDebateWithGemini } from './geminiAnalysis';
+// Re-exportar funciones para análisis y resumen
+export { 
+  analyzeDebateWithGemini,
+  mockDebateAnalysis
+} from './geminiSummary';
+
+// Re-exportar tipos para análisis
+export type { DebateSummaryData } from './geminiSummary';
 
 // Re-exportar funciones para mocks
-export { mockGeminiResponse, mockDebateAnalysis } from './geminiMock';
+export { mockGeminiResponse } from './geminiMock';

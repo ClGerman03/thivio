@@ -1,0 +1,67 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "INSTRUCCIONES PRECISAS PARA GENERAR JSON\n====================================\n\nEres un analizador experto de debates que DEBE generar SOLAMENTE un objeto JSON válido sin ningún texto adicional.\n\nIMPORTANTE: Tu respuesta debe contener EXCLUSIVAMENTE un objeto JSON. Nada de texto introductorio, explicaciones ni comentarios.\n\nTASK: Analiza este debate y genera una evaluación estructurada en JSON.\n\nFORMATO OBLIGATORIO (debes responder EXACTAMENTE con esta estructura):\n\n{\n  \"score\": 75,\n  \"strengths\": \"Texto de 1-3 frases sobre fortalezas\",\n  \"weaknesses\": \"Texto de 1-3 frases sobre áreas de mejora\",\n  \"highlights\": \"Momentos destacados del debate\",\n  \"recommendations\": \"Recomendaciones para mejorar\",\n  \"skills\": [\n    {\"skill\": \"Content\", \"value\": 75},\n    {\"skill\": \"Structure\", \"value\": 70},\n    {\"skill\": \"Style\", \"value\": 80},\n    {\"skill\": \"Arguments\", \"value\": 75},\n    {\"skill\": \"Response\", \"value\": 70},\n    {\"skill\": \"Clarity\", \"value\": 75}\n  ]\n}\n\nCRITERIOS DE EVALUACIÓN:\n- Score: Número entre 0-100 que evalúa el desempeño general\n- Content (0-100): Calidad y relevancia del contenido del usuario\n- Structure (0-100): Organización lógica de los argumentos\n- Style (0-100): Efectividad comunicativa\n- Arguments (0-100): Solidez y originalidad argumentativa\n- Response (0-100): Capacidad de respuesta a contraargumentos\n- Clarity (0-100): Claridad y precisión expresiva\n\nADVERTENCIA: NO escribas nada fuera del objeto JSON. No incluyas marcadores de código en tu respuesta.\nSi tu respuesta comienza con algo que no sea \"{\" o termina con algo que no sea \"}\", será rechazada."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "\n          DEBATE CONTEXT:\n          - Topic: El impacto de la inteligencia artificial en el futuro del trabajo\n          - Format: Debate formal\n          - Total turns: 6\n          - Opponent: AI Assistant (ai-assistant)\n          \n          User's position: La IA creará más puestos de trabajo de los que eliminará\n        "
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "La inteligencia artificial no eliminará empleos, sino que transformará la naturaleza del trabajo. Durante la revolución industrial, muchos temieron el fin del empleo, pero en realidad surgieron nuevas industrias y ocupaciones. La IA automatizará tareas repetitivas, pero generará nuevas oportunidades en áreas como desarrollo de IA, análisis de datos y ética tecnológica."
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Aunque comprendo tu optimismo, la realidad es más compleja. A diferencia de revoluciones anteriores, la IA puede reemplazar no solo tareas físicas sino también cognitivas. Los estudios de Oxford y McKinsey estiman que entre 30-50% de empleos actuales son susceptibles a la automatización. Los nuevos trabajos sí surgen, pero requieren habilidades especializadas que no todos pueden adquirir rápidamente, creando un desajuste estructural en el mercado laboral."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Esos mismos estudios también reconocen que la predicción de empleos futuros es notoriamente imprecisa. El informe del Foro Económico Mundial de 2020 predice que la IA creará 97 millones de nuevos empleos para 2025. Además, la historia demuestra nuestra capacidad de adaptación: desarrollamos nuevas habilidades y creamos industrias que antes no podíamos imaginar. La clave está en la educación y formación continua, no en frenar la innovación."
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "El informe del FEM también menciona 85 millones de empleos desplazados, lo que representa una transformación masiva. La velocidad es el factor diferencial: mientras las revoluciones anteriores ocurrieron durante décadas, la IA avanza exponencialmente, dejando poco tiempo para la adaptación. La brecha de habilidades digital ya es significativa, con millones de personas sin acceso a educación tecnológica. Sin intervención política decidida y redistribución de la riqueza generada por la IA, corremos el riesgo de ampliar la desigualdad económica a niveles sin precedentes."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Precisamente porque reconocemos esos desafíos debemos prepararnos, no temer a la tecnología. Ya estamos viendo ejemplos positivos: la IA en medicina no reemplaza médicos, sino que mejora sus diagnósticos; en manufactura, los robots industriales han aumentado la productividad mientras crean nuevos roles técnicos. Debemos enfocarnos en políticas que faciliten la transición: renta básica temporal, programas de recapacitación masiva e incentivos fiscales para empresas que inviertan en el desarrollo humano. La historia nos enseña que el progreso tecnológico, gestionado adecuadamente, eleva el nivel de vida de la sociedad."
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "temperature": 0.2,
+    "topP": 0.95,
+    "topK": 40,
+    "maxOutputTokens": 1024,
+    "stopSequences": []
+  }
+}
