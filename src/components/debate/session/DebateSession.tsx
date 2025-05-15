@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 // Importaciones de popups eliminadas temporalmente
 import { DebateProvider } from '@/context/DebateContext';
 import { useDebateState } from '@/hooks/useDebateState';
@@ -9,6 +9,8 @@ import { useDebateSummary } from '@/hooks/useDebateSummary';
 import { useGeminiDebate, DebateMessage } from '@/hooks/useGeminiDebate';
 // Cambiamos a Kokoro TTS en lugar de Google Cloud TTS
 import { useKokoroTTS } from '@/hooks/useKokoroTTS';
+// Importamos el hook para Speech-to-Text con Whisper
+import { useWhisperSTT } from '@/hooks/useWhisperSTT';
 
 // Importar componentes UI
 import SpeakerVisualization from './ui/SpeakerVisualization';
@@ -43,8 +45,20 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
   // Hook para Kokoro TTS
   const { speak, cancel, isSpeaking } = useKokoroTTS();
   
+  // Hook para Whisper STT (Speech-to-Text)
+  const { 
+    startRecording, 
+    stopRecording, 
+    isTranscribing,
+    clearTranscription,
+    transcribeAudioBlob
+  } = useWhisperSTT();
+  
   // Estado del mensaje del usuario actual (modo texto)
   const [userMessage, setUserMessage] = useState<string>('');
+  
+  // Estado para la transcripción de voz
+  const [transcribedText, setTranscribedText] = useState<string>('');
   
   // Asegurarnos de que tenemos toda la configuración necesaria para el debate
   // Usamos useMemo para evitar recrear este objeto en cada renderizado
@@ -78,14 +92,54 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
     currentTopicIndex,
     currentTurnIndex,
     currentTurnName,
-    handleToggleMicrophone,
     handleTurnChange,
     opponentName,
     nextTurn,
     setIsAIThinking,
     setIsAISpeaking,
+    setIsRecording,
     setHasRecordedContent
   } = debateState;
+  
+  // Manejador para iniciar/detener la grabación con transcripción
+  const handleToggleMicrophone = useCallback(async () => {
+    // Si ya estamos grabando, detener y transcribir
+    if (isRecording) {
+      setIsRecording(false);
+      
+      try {
+        // Detener la grabación y obtener el audio
+        const audioBlob = await stopRecording(false); // No transcribir automáticamente
+        
+        if (audioBlob) {
+          console.log('Grabación finalizada, transcribiendo audio...');
+          setTranscribedText('');
+          
+          // Transcribir el audio grabado
+          const result = await transcribeAudioBlob(audioBlob, {
+            language: 'auto' // Detección automática del idioma
+          });
+          
+          if (result && result.text) {
+            console.log('Transcripción completada:', result.text);
+            setTranscribedText(result.text);
+            setUserMessage(result.text); // También actualizamos el mensaje de usuario
+            setHasRecordedContent(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error al procesar la grabación:', error);
+        setHasRecordedContent(false);
+      }
+    } else {
+      // Iniciar nueva grabación
+      clearTranscription();
+      setTranscribedText('');
+      await startRecording();
+      setIsRecording(true);
+      console.log('Grabación iniciada...');
+    }
+  }, [isRecording, stopRecording, startRecording, clearTranscription, transcribeAudioBlob, setIsRecording, setHasRecordedContent]);
   
   // Estado para mensajes generados por Gemini
   const {
@@ -108,15 +162,24 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
     setShowTurnPopup
   } = useDebateInterventions(debateState, debateConfig);
   
+  // Utilizamos una referencia para seguir el último ID reproducido y evitar duplicaciones
+  const lastPlayedMessageIdRef = useRef<string | null>(null);
+  
   // Efecto para reproducir respuestas de IA por voz si no estamos en modo texto
   useEffect(() => {
     // Buscamos la última respuesta de la IA
     if (history.length > 0 && !TEXT_MODE_ENABLED && activeSpeaker === 'ai') {
       const lastMessage = history[history.length - 1];
       
-      // Si es un mensaje del oponente, reproducir con TTS
-      if (lastMessage?.speaker === 'opponent' && lastMessage.content) {
+      // Si es un mensaje del oponente, reproducir con TTS, pero solo si no se ha reproducido ya
+      if (lastMessage?.speaker === 'opponent' && 
+          lastMessage.content && 
+          lastMessage.id !== lastPlayedMessageIdRef.current) {
+        
         console.log('Reproduciendo respuesta AI con Kokoro TTS:', lastMessage.content.substring(0, 50) + '...');
+        // Actualizar la referencia antes de reproducir para evitar duplicación
+        lastPlayedMessageIdRef.current = lastMessage.id;
+        
         speak(lastMessage.content, {
           voice: 'am_michael', // Voz masculina (opciones: af_bella, am_adam, am_michael, af_nicole, etc.)
           speed: 1.0 // Velocidad normal
@@ -272,6 +335,8 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
                 : ''}
               userInputMode={userInputMode}
               onToggleInputMode={toggleInputMode}
+              transcribedText={transcribedText}
+              isTranscribing={isTranscribing}
             />
             
             {/* Current topic information with rounded background */}
@@ -296,8 +361,10 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
                   // Cambiamos el hablante activo
                   handleTurnChange(speaker);
                   
-                  // Si estamos cambiando de la IA al usuario, avanzamos al siguiente turno
-                  if (isChangingFromAIToUser && TEXT_MODE_ENABLED) {
+                  // Si estamos cambiando de la IA al usuario, avanzamos al siguiente turno estructural
+                  // Esto asegura que después de que el usuario toma el turno, se avance a la siguiente fase
+                  // independientemente del modo de texto
+                  if (isChangingFromAIToUser) {
                     console.log('Avanzando al siguiente turno después de que el usuario tomó el turno');
                     nextTurn();
                   }

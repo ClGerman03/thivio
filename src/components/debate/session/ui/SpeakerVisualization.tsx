@@ -71,6 +71,16 @@ interface SpeakerVisualizationProps {
    * Function to toggle user input mode
    */
   onToggleInputMode?: () => void;
+  
+  /**
+   * Texto transcrito del audio del usuario
+   */
+  transcribedText?: string;
+  
+  /**
+   * Indica si se está procesando la transcripción de audio
+   */
+  isTranscribing?: boolean;
 }
 
 /**
@@ -90,7 +100,9 @@ export default function SpeakerVisualization({
   onSendMessage = () => {},
   aiResponseContent = '',
   userInputMode = 'text',
-  onToggleInputMode = () => {}
+  onToggleInputMode = () => {},
+  transcribedText = '',
+  isTranscribing = false
 }: SpeakerVisualizationProps) {
   return (
     <div className="w-full flex justify-center mb-8">
@@ -213,7 +225,9 @@ export default function SpeakerVisualization({
                   >
                     <UserVisualizer 
                       isActive={isRecording} 
-                      onActivate={onToggleMicrophone} 
+                      onActivate={onToggleMicrophone}
+                      transcribedText={transcribedText}
+                      isTranscribing={isTranscribing} 
                     />
                   </motion.div>
                 )}

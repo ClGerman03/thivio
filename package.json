@@ -11,13 +11,15 @@
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.1.0",
     "@heroicons/react": "^2.2.0",
+    "@types/uuid": "^10.0.0",
     "framer-motion": "^12.9.2",
     "localforage": "^1.10.0",
     "next": "^14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^2.15.3",
-    "replicate": "^1.0.1"
+    "replicate": "^1.0.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.0.0",
