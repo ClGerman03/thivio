@@ -308,7 +308,10 @@ export function useDebateSummary(
       setIsAnalyzing(false);
       analysisInProgressRef.current = false;
     }
-  }, [apiKey, debateConfig, debateHistory, summaryData, isApiKeyLoaded]);
+    // No incluimos summaryData como dependencia para evitar que se recree la función
+    // cuando se actualiza el summaryData, lo que causaría llamados repetidos
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, debateConfig, debateHistory, isApiKeyLoaded]);
   
   /**
    * Genera un resumen en formato texto para casos de uso más simples

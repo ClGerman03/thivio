@@ -87,10 +87,13 @@ export default function DebateWorkflow({ documentId, learningId, onStepChange, i
               >
                 <DebateSummary 
                   debateConfig={{
+                    id: documentId, // Pasar el ID del debate para guardado en localStorage
                     topic: debateConfig.topic || '',         // Mantener para compatibilidad
                     topics: debateConfig.topics || [],       // Pasar todos los tópicos
                     debateType: debateConfig.debateFormat,  // Usar el formato real configurado
-                    userRole: Object.keys(debateConfig.positions)[0] || '' // Rol del usuario
+                    userRole: Object.keys(debateConfig.positions)[0] || '', // Rol del usuario
+                    learningId: learningId || '',  // Pasar el ID del learning asociado
+                    debateName: debateConfig.debateName || '' // Pasar el nombre del debate
                   }}
                   debateHistory={debateHistory}            // Pasar el historial del debate
                   onFinish={handleSummaryFinish}

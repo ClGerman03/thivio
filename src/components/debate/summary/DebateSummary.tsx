@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useDebateSummary } from '@/hooks/useDebateSummary';
+import { saveDebateSummary, getDebateSummaryByDebateId } from '@/services/debateSummaryService';
 import SkillsRadarChart from './SkillsRadarChart';
 import FeedbackSections from './FeedbackSections';
 // Importamos los datos de prueba para depuración
@@ -11,10 +12,13 @@ import FeedbackSections from './FeedbackSections';
 
 // Definimos interfaces para los datos utilizados en el componente
 interface DebateConfigSummary {
-  topic?: string;
-  topics?: string[];
-  debateType: string;
-  userRole: string;
+  id?: string;            // ID único del debate
+  topic?: string;         // Tema principal (para compatibilidad)
+  topics?: string[];      // Array de tópicos del debate
+  debateType: string;     // Tipo de debate
+  userRole: string;       // Rol del usuario
+  learningId?: string;    // ID del learning asociado
+  debateName?: string;    // Nombre del debate
 }
 
 interface SkillData {
@@ -33,10 +37,13 @@ interface SummaryData {
 
 type DebateSummaryProps = {
   debateConfig: {
-    topic?: string; // Mantenemos por compatibilidad
-    topics?: string[]; // Array de tópicos del debate
-    debateType: string;
-    userRole: string;
+    id?: string;           // ID del debate
+    topic?: string;        // Mantenemos por compatibilidad
+    topics?: string[];     // Array de tópicos del debate
+    debateType: string;    // Tipo de debate 
+    userRole: string;      // Rol del usuario
+    learningId?: string;   // ID del learning asociado
+    debateName?: string;   // Nombre del debate
   };
   debateHistory?: Array<{
     id: string;
@@ -215,10 +222,32 @@ function DebateSummary({ debateConfig, debateHistory, onFinish }: DebateSummaryP
   // Evitar bucles de renderizado
   const analysisCompletedRef = useRef(false);
 
-  // Effect to analyze the debate and get the summary - Ejcutar solo una vez
+  // Estado local para evitar múltiples análisis durante la vida del componente
+  const [hasCompletedAnalysis, setHasCompletedAnalysis] = useState(false);
+  
+  // Intentar cargar un resumen existente al iniciar
   useEffect(() => {
-    // Evitar que se ejecute múltiples veces
-    if (analysisCompletedRef.current) {
+    if (!debateConfig?.id) return;
+    
+    // Buscar si ya existe un resumen para este debate
+    const savedSummary = getDebateSummaryByDebateId(debateConfig.id);
+    if (savedSummary) {
+      console.log(`DebateSummary: Resumen encontrado para debate ${debateConfig.id}, cargándolo desde localStorage`);
+      setSummaryData(savedSummary.summaryData);
+      setHasCompletedAnalysis(true);
+      analysisCompletedRef.current = true;
+      setIsAnalyzing(false);
+    } else {
+      console.log(`DebateSummary: No se encontró resumen para debate ${debateConfig.id}, se generará uno nuevo`);
+    }
+  }, [debateConfig?.id]);
+  
+  // Effect to analyze the debate and get the summary - Ejecutar solo una vez
+  useEffect(() => {
+    // Evitar que se ejecute múltiples veces 
+    // Usamos tanto la ref como un estado para máxima protección
+    if (analysisCompletedRef.current || hasCompletedAnalysis) {
+      console.log('DebateSummary: Análisis ya completado, evitando llamada repetida');
       return;
     }
 
@@ -228,7 +257,7 @@ function DebateSummary({ debateConfig, debateHistory, onFinish }: DebateSummaryP
         analysisCompletedRef.current = true;
         
         // Usamos el mismo historial efectivo que configuramos para el hook
-        const historyToAnalyze = effectiveHistory;
+        const historyToAnalyze = debateHistory || [];
         
         // Si tenemos historial, lo usamos para el análisis
         if (historyToAnalyze && historyToAnalyze.length > 0) {
@@ -247,22 +276,66 @@ function DebateSummary({ debateConfig, debateHistory, onFinish }: DebateSummaryP
         const data = await generateSummary();
         const endTime = performance.now();
         
-        console.log(`DebateSummary: Análisis completado en ${(endTime - startTime).toFixed(0)}ms:`, 
-          data ? {
-            score: data.score,
-            skillsCount: data.skills?.length || 0,
-            hasStrengths: !!data.strengths,
-            hasWeaknesses: !!data.weaknesses,
-            hasHighlights: !!data.highlights
-          } : 'Sin datos');
+        // Validar que tenemos datos válidos
+        if (!data) {
+          throw new Error('No se recibieron datos válidos del análisis');
+        }
+        
+        console.log(`DebateSummary: Análisis completado en ${(endTime - startTime).toFixed(0)}ms:`, {
+          score: data.score,
+          skillsCount: data.skills?.length || 0,
+          hasStrengths: !!data.strengths,
+          hasWeaknesses: !!data.weaknesses,
+          hasHighlights: !!data.highlights
+        });
           
+        // Guardar los datos en el estado local del componente
         setSummaryData(data);
         
-        // Finish analysis
+        // Guardar el resumen en localStorage si tenemos un ID de debate válido
+        if (debateConfig?.id) {
+          console.log(`DebateSummary: Preparando guardado para debate ${debateConfig.id} en localStorage`);
+          
+          // Preparar metadatos del debate
+          const debateMetadata = {
+            learningId: debateConfig.learningId || '',
+            debateName: debateConfig.debateName || 'Debate sin nombre',
+            debateTopic: debateConfig.topic || (debateConfig.topics && debateConfig.topics.length > 0 ? debateConfig.topics[0] : 'Sin tema')
+          };
+          
+          console.log('DebateSummary: Metadatos del debate:', debateMetadata);
+          
+          // Intentar guardar el resumen
+          const savedSuccessfully = saveDebateSummary(
+            data, 
+            debateConfig.id,
+            debateMetadata
+          );
+          
+          if (savedSuccessfully) {
+            console.log(`DebateSummary: Resumen guardado exitosamente en localStorage`);
+            
+            // Verificar que se guardó correctamente
+            const savedSummary = getDebateSummaryByDebateId(debateConfig.id);
+            if (savedSummary) {
+              console.log('DebateSummary: Verificación exitosa - Resumen encontrado en localStorage');
+            } else {
+              console.warn('DebateSummary: Verificación fallida - No se encontró el resumen en localStorage después de guardarlo');
+            }
+          } else {
+            console.error('DebateSummary: Error al guardar el resumen en localStorage');
+          }
+        } else {
+          console.warn('DebateSummary: No se pudo guardar el resumen porque no hay ID de debate válido');
+        }
+        
+        // Finish analysis y marcar como completado en ambos lugares
         setIsAnalyzing(false);
+        setHasCompletedAnalysis(true);
       } catch (error) {
         console.error('Error en análisis de debate:', error);
         setIsAnalyzing(false);
+        analysisCompletedRef.current = false;
         
         // Mensaje de error más amigable
         // alert('Hubo un problema al analizar el debate. Por favor, intenta nuevamente.'); // Comentado para evitar molestias durante las pruebas
@@ -276,7 +349,7 @@ function DebateSummary({ debateConfig, debateHistory, onFinish }: DebateSummaryP
       analysisCompletedRef.current = false;
     };
   // Incluir dependencias necesarias
-  }, [effectiveHistory, generateSummary]);
+  }, [debateHistory, generateSummary, debateConfig, hasCompletedAnalysis]);
 
   const handleFinish = () => {
     // Call the original onFinish callback if needed
