@@ -112,11 +112,23 @@ export default function SpeakerVisualization({
                 opponentName={opponentName} 
               />
             ) : (
-              <AIVisualizer 
-                isActive={isAISpeaking} 
-                isThinking={isAIThinking} 
-                opponentName={opponentName} 
-              />
+              <div className="relative">
+                {/* Visualizador de audio de la IA */}
+                <AIVisualizer 
+                  isActive={isAISpeaking} 
+                  isThinking={isAIThinking} 
+                  opponentName={opponentName} 
+                />
+                
+                {/* Mostramos el texto de la respuesta como un complemento visual */}
+                {aiResponseContent && (
+                  <div className="mt-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm max-w-lg mx-auto overflow-auto max-h-60">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                      {aiResponseContent}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </motion.div>
         )}

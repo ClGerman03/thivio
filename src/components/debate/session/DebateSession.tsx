@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 // Importaciones de popups eliminadas temporalmente
 import { DebateProvider } from '@/context/DebateContext';
 import { useDebateState } from '@/hooks/useDebateState';
 import { useDebateInterventions } from '@/hooks/useDebateInterventions';
 import { useDebateSummary } from '@/hooks/useDebateSummary';
 import { useGeminiDebate, DebateMessage } from '@/hooks/useGeminiDebate';
+// Cambiamos a Kokoro TTS en lugar de Google Cloud TTS
+import { useKokoroTTS } from '@/hooks/useKokoroTTS';
 
 // Importar componentes UI
 import SpeakerVisualization from './ui/SpeakerVisualization';
@@ -15,7 +17,7 @@ import DebateControlsArea from './ui/DebateControlsArea';
 import DebateTurnArea from './ui/DebateTurnArea';
 
 // Constante para modo de prueba con texto (simplificado)
-const TEXT_MODE_ENABLED = true; // Cambiar a false para usar el modo de voz
+const TEXT_MODE_ENABLED = false; // Cambiar a false para usar el modo de voz
 
 // Types imported from context
 
@@ -37,6 +39,9 @@ type DebateSessionProps = {
 export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick }: DebateSessionProps) {
   // Use our custom hooks to manage state and logic
   const debateState = useDebateState(debateConfig);
+  
+  // Hook para Kokoro TTS
+  const { speak, cancel, isSpeaking } = useKokoroTTS();
   
   // Estado del mensaje del usuario actual (modo texto)
   const [userMessage, setUserMessage] = useState<string>('');
@@ -103,6 +108,35 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
     setShowTurnPopup
   } = useDebateInterventions(debateState, debateConfig);
   
+  // Efecto para reproducir respuestas de IA por voz si no estamos en modo texto
+  useEffect(() => {
+    // Buscamos la última respuesta de la IA
+    if (history.length > 0 && !TEXT_MODE_ENABLED && activeSpeaker === 'ai') {
+      const lastMessage = history[history.length - 1];
+      
+      // Si es un mensaje del oponente, reproducir con TTS
+      if (lastMessage?.speaker === 'opponent' && lastMessage.content) {
+        console.log('Reproduciendo respuesta AI con Kokoro TTS:', lastMessage.content.substring(0, 50) + '...');
+        speak(lastMessage.content, {
+          voice: 'am_michael', // Voz masculina (opciones: af_bella, am_adam, am_michael, af_nicole, etc.)
+          speed: 1.0 // Velocidad normal
+        });
+      }
+    }
+    
+    // Cancelar TTS cuando cambiamos de hablante o si activamos modo texto
+    if ((activeSpeaker !== 'ai' || TEXT_MODE_ENABLED) && isSpeaking) {
+      cancel();
+    }
+  }, [history, activeSpeaker, speak, cancel, isSpeaking]);
+  
+  // Efecto para actualizar isAISpeaking basado en TTS
+  useEffect(() => {
+    if (!TEXT_MODE_ENABLED) {
+      setIsAISpeaking(isSpeaking);
+    }
+  }, [isSpeaking, setIsAISpeaking]);
+  
   // Utilizamos el hook reimplementado para generar el resumen textual
   const { generateTextSummary } = useDebateSummary(
     debateConfig,
@@ -157,20 +191,19 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
         // La IA termina de hablar
         setIsAISpeaking(false);
         
-        if (!TEXT_MODE_ENABLED) {
-          // En modo voz, cambiar automáticamente (mantenemos este comportamiento)
-          handleTurnChange('user');
-          nextTurn();
-          
-          // Mostrar popup para el turno del usuario
-          const popupText = `Tu turno! Habla sobre "${currentTopic}" - ${currentTurnName}`;
-          setTurnPopupText(popupText);
-          setShowTurnPopup(true);
-        } else {
-          // En modo texto, NO cambiamos automáticamente
-          // El usuario deberá usar el botón "Tomar turno" cuando esté listo
-          console.log(`La IA ha terminado de responder. Puedes tomar el turno cuando estés listo.`);
-        }
+        // En ningún modo cambiamos automáticamente al usuario
+        // El usuario siempre debe usar el botón "Tomar turno" cuando esté listo
+        console.log(`La IA ha terminado de responder. Puedes tomar el turno cuando estés listo.`);
+        
+        // Opcionalmente mostrar un mensaje indicativo para el usuario
+        const popupText = `${opponentName} ha terminado. Cuando estés listo, presiona "Tomar turno" para continuar con "${currentTopic}" - ${currentTurnName}`;
+        setTurnPopupText(popupText);
+        setShowTurnPopup(true);
+        
+        // Cerramos automáticamente el popup después de unos segundos
+        setTimeout(() => {
+          setShowTurnPopup(false);
+        }, 5000);
       }, speakingTime);
       
     } catch (error) {
@@ -188,8 +221,8 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
       console.error(`Hubo un error al obtener respuesta de Gemini. Por favor intenta de nuevo.`);
     }
   }, [currentTopic, currentTurnName, currentTurnIndex, getAIResponse, handleTurnChange, 
-      nextTurn, opponentName, setIsAIThinking, setIsAISpeaking, setHasRecordedContent,
-      /* closePopup omitido porque no se usa dentro de esta función callback */
+      opponentName, setIsAIThinking, setIsAISpeaking, setHasRecordedContent,
+      /* nextTurn y closePopup omitidos porque no se usan dentro de esta función callback */
       setTurnPopupText, setShowTurnPopup]);
   
   // Topic selection handler
