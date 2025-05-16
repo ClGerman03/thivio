@@ -16,6 +16,8 @@ export function useWhisperSTT() {
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
   // Estado para controlar errores
   const [error, setError] = useState<Error | null>(null);
+  // Estado para almacenar logs del proceso de Whisper
+  const [whisperLogs, setWhisperLogs] = useState<string[]>([]);
 
   // Referencias para manejar la grabación
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -38,19 +40,32 @@ export function useWhisperSTT() {
       setIsTranscribing(true);
       setError(null);
       
-      console.log('Transcribiendo audio de', audioBlob.size, 'bytes');
+      const logMessage = `Transcribiendo audio de ${audioBlob.size} bytes`;
+      console.log(logMessage);
+      setWhisperLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${logMessage}`]);
       
       // Usar el servicio de transcripción
       const result = await transcribeAudio(audioBlob, options);
       
       setTranscription(result);
-      console.log('Transcripción completada:', result.text);
+      const completedMsg = `Transcripción completada: "${result.text}"`;
+      console.log(completedMsg);
+      setWhisperLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${completedMsg}`]);
+      
+      // Añadir información sobre segmentos si existen
+      if (result.segments && result.segments.length > 0) {
+        const segmentsLog = `Segmentos detectados: ${result.segments.length}, Idioma: ${result.language || 'no especificado'}`;
+        console.log(segmentsLog);
+        setWhisperLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${segmentsLog}`]);
+      }
       
       return result;
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error(String(err));
       setError(errorObj);
-      console.error('Error al transcribir audio:', errorObj);
+      const errorMsg = `Error al transcribir audio: ${errorObj.message}`;
+      console.error(errorMsg);
+      setWhisperLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ❌ ${errorMsg}`]);
       return null;
     } finally {
       setIsTranscribing(false);
@@ -82,7 +97,9 @@ export function useWhisperSTT() {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         
         setIsRecording(false);
-        console.log('Grabación detenida, tamaño:', audioBlob.size, 'bytes');
+        const stopMsg = `Grabación detenida, tamaño: ${audioBlob.size} bytes`;
+        console.log(stopMsg);
+        setWhisperLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${stopMsg}`]);
         
         // Si se solicita transcripción automática
         if (transcribeAfterStop && audioBlob.size > 0) {
@@ -123,10 +140,15 @@ export function useWhisperSTT() {
       mediaRecorder.start();
       setIsRecording(true);
       
-      console.log('Grabación iniciada');
+      const startMsg = 'Grabación iniciada';
+      console.log(startMsg);
+      setWhisperLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${startMsg}`]);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-      console.error('Error al iniciar la grabación:', err);
+      const errorObj = err instanceof Error ? err : new Error(String(err));
+      setError(errorObj);
+      const errorMsg = `Error al iniciar la grabación: ${errorObj.message}`;
+      console.error(errorMsg);
+      setWhisperLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ❌ ${errorMsg}`]);
     }
   }, []);
 
@@ -137,18 +159,27 @@ export function useWhisperSTT() {
     setTranscription(null);
   }, []);
 
+  /**
+   * Limpia los logs de Whisper
+   */
+  const clearWhisperLogs = useCallback(() => {
+    setWhisperLogs([]);
+  }, []);
+
   return {
     // Estados
     isRecording,
     isTranscribing,
     transcription,
     error,
+    whisperLogs,
     
     // Acciones
     startRecording,
     stopRecording,
     transcribeAudioBlob,
-    clearTranscription
+    clearTranscription,
+    clearWhisperLogs
   };
 }
 

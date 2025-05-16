@@ -81,6 +81,16 @@ interface SpeakerVisualizationProps {
    * Indica si se está procesando la transcripción de audio
    */
   isTranscribing?: boolean;
+
+  /**
+   * Logs del proceso de Whisper STT
+   */
+  whisperLogs?: string[];
+
+  /**
+   * Indica si se deben mostrar los logs de Whisper
+   */
+  showWhisperLogs?: boolean;
 }
 
 /**
@@ -102,7 +112,9 @@ export default function SpeakerVisualization({
   userInputMode = 'text',
   onToggleInputMode = () => {},
   transcribedText = '',
-  isTranscribing = false
+  isTranscribing = false,
+  whisperLogs = [],
+  showWhisperLogs = true
 }: SpeakerVisualizationProps) {
   return (
     <div className="w-full flex justify-center mb-8">
@@ -236,6 +248,38 @@ export default function SpeakerVisualization({
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Whisper STT Logs Section */}
+      {userInputMode === 'voice' && showWhisperLogs && whisperLogs.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+          className="mt-6 max-w-2xl mx-auto w-full"
+        >
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-auto">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Whisper STT Logs
+              </h3>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {whisperLogs.length} {whisperLogs.length === 1 ? 'entrada' : 'entradas'}
+              </div>
+            </div>
+            <div className="max-h-48 overflow-y-auto text-xs font-mono">
+              {whisperLogs.map((log, index) => (
+                <div 
+                  key={index} 
+                  className={`py-1 px-2 ${index % 2 === 0 ? 'bg-gray-100 dark:bg-gray-750' : ''} ${log.includes('❌') ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}
+                >
+                  {log}
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

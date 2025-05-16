@@ -51,7 +51,8 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
     stopRecording, 
     isTranscribing,
     clearTranscription,
-    transcribeAudioBlob
+    transcribeAudioBlob,
+    whisperLogs
   } = useWhisperSTT();
   
   // Estado del mensaje del usuario actual (modo texto)
@@ -149,6 +150,15 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
     getAIResponse
     // clearHistory      // No utilizado
   } = useGeminiDebate(completeDebateConfig);
+  
+  // Obtener el último mensaje de la IA para mostrarlo
+  const lastAIMessage = useMemo(() => {
+    if (history.length > 0) {
+      const lastMessage = history[history.length - 1];
+      return lastMessage?.speaker === 'opponent' ? lastMessage.content : '';
+    }
+    return '';
+  }, [history]);
   
   // Interventions and messaging (mantenemos temporalmente para compatibilidad)
   const { 
@@ -313,10 +323,10 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
         <div className="flex flex-col space-y-5">
           <div className="flex flex-col items-center">
             {/* Speaker visualization component */}
-            <SpeakerVisualization
+            <SpeakerVisualization 
               activeSpeaker={activeSpeaker}
               isAISpeaking={isAISpeaking}
-              isAIThinking={isAIThinking || isGenerating}
+              isAIThinking={isAIThinking}
               opponentName={opponentName}
               isRecording={isRecording}
               onToggleMicrophone={handleToggleMicrophone}
@@ -328,15 +338,13 @@ export default function DebateSession({ debateConfig, onDebateEnd, onConfigClick
                   void sendUserIntervention(userMessage);
                 }
               }}
-              aiResponseContent={history.length > 0 
-                ? history[history.length - 1]?.speaker === 'opponent' 
-                  ? history[history.length - 1].content 
-                  : ''
-                : ''}
+              aiResponseContent={lastAIMessage}
               userInputMode={userInputMode}
               onToggleInputMode={toggleInputMode}
               transcribedText={transcribedText}
               isTranscribing={isTranscribing}
+              whisperLogs={whisperLogs}
+              showWhisperLogs={true}
             />
             
             {/* Current topic information with rounded background */}
